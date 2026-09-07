@@ -1,7 +1,12 @@
 {
   "name": "omes-dgw-web",
-  "private": true,
   "version": "0.0.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitee.com/omes/omes-dgw.git"
+  },
+  "homepage": "https://gitee.com/omes/omes-dgw",
   "type": "module",
   "scripts": {
     "dev": "vite",

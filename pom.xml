@@ -17,6 +17,21 @@
     <packaging>pom</packaging>
     <name>omes-dgw</name>
     <description>OMES设备软边缘网关</description>
+    <url>https://gitee.com/omes/omes-dgw</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:https://gitee.com/omes/omes-dgw.git</connection>
+        <developerConnection>scm:git:https://gitee.com/omes/omes-dgw.git</developerConnection>
+        <url>https://gitee.com/omes/omes-dgw</url>
+    </scm>
 
     <modules>
         <module>omes-dgw-server</module>
