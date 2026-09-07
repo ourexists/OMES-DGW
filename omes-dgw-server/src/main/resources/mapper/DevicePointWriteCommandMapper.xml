@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.omes.dgw.device.mapper.DevicePointWriteCommandMapper">
+
+    <sql id="taskHistoryFilter">
+        DELETED = 0
+        <if test="q.taskId != null and q.taskId != ''">
+            AND TASK_ID = #{q.taskId}
+        </if>
+        <if test="q.deviceId != null and q.deviceId != ''">
+            AND TASK_ID IN (
+                SELECT DISTINCT DEVICE_FILTER.TASK_ID
+                FROM T_DEVICE_POINT_WRITE_COMMAND DEVICE_FILTER
+                WHERE DEVICE_FILTER.DELETED = 0
+                  AND DEVICE_FILTER.DEVICE_ID = #{q.deviceId}
+            )
+        </if>
+        <if test="q.address != null and q.address != ''">
+            AND TASK_ID IN (
+                SELECT DISTINCT ADDRESS_FILTER.TASK_ID
+                FROM T_DEVICE_POINT_WRITE_COMMAND ADDRESS_FILTER
+                WHERE ADDRESS_FILTER.DELETED = 0
+                  AND ADDRESS_FILTER.ADDRESS LIKE '%' || #{q.address} || '%'
+            )
+        </if>
+        <if test="q.createTimeFrom != null">
+            AND CREATE_TIME &gt;= #{q.createTimeFrom}
+        </if>
+        <if test="q.createTimeTo != null">
+            AND CREATE_TIME &lt;= #{q.createTimeTo}
+        </if>
+        <if test="q.executedTimeFrom != null">
+            AND EXECUTED_TIME &gt;= #{q.executedTimeFrom}
+        </if>
+        <if test="q.executedTimeTo != null">
+            AND EXECUTED_TIME &lt;= #{q.executedTimeTo}
+        </if>
+    </sql>
+
+    <sql id="taskStatusHaving">
+        <if test="q.taskStatus != null and q.taskStatus != ''">
+            <choose>
+                <when test="q.taskStatus == 'RUNNING'">
+                    HAVING SUM(CASE WHEN STATUS = 'RUNNING' THEN 1 ELSE 0 END) &gt; 0
+                </when>
+                <when test="q.taskStatus == 'PENDING'">
+                    HAVING SUM(CASE WHEN STATUS = 'RUNNING' THEN 1 ELSE 0 END) = 0
+                       AND SUM(CASE WHEN STATUS = 'PENDING' THEN 1 ELSE 0 END) &gt; 0
+                </when>
+                <when test="q.taskStatus == 'PARTIAL'">
+                    HAVING SUM(CASE WHEN STATUS = 'RUNNING' THEN 1 ELSE 0 END) = 0
+                       AND SUM(CASE WHEN STATUS = 'PENDING' THEN 1 ELSE 0 END) = 0
+                       AND SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) &gt; 0
+                       AND SUM(CASE WHEN STATUS = 'SUCCESS' THEN 1 ELSE 0 END) &gt; 0
+                </when>
+                <when test="q.taskStatus == 'FAILED'">
+                    HAVING SUM(CASE WHEN STATUS = 'RUNNING' THEN 1 ELSE 0 END) = 0
+                       AND SUM(CASE WHEN STATUS = 'PENDING' THEN 1 ELSE 0 END) = 0
+                       AND SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) &gt; 0
+                       AND SUM(CASE WHEN STATUS = 'SUCCESS' THEN 1 ELSE 0 END) = 0
+                </when>
+                <when test="q.taskStatus == 'SUCCESS'">
+                    HAVING SUM(CASE WHEN STATUS = 'RUNNING' THEN 1 ELSE 0 END) = 0
+                       AND SUM(CASE WHEN STATUS = 'PENDING' THEN 1 ELSE 0 END) = 0
+                       AND SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) = 0
+                       AND SUM(CASE WHEN STATUS = 'SUCCESS' THEN 1 ELSE 0 END) &gt; 0
+                </when>
+            </choose>
+        </if>
+    </sql>
+
+    <select id="selectTaskHistoryPage"
+            resultType="com.omes.dgw.device.dto.DevicePointWriteTaskHistoryVo">
+        SELECT
+            TASK_ID AS taskId,
+            COUNT(1) AS commandCount,
+            SUM(CASE WHEN STATUS = 'SUCCESS' THEN 1 ELSE 0 END) AS successCount,
+            SUM(CASE WHEN STATUS = 'FAILED' THEN 1 ELSE 0 END) AS failedCount,
+            SUM(CASE WHEN STATUS = 'PENDING' THEN 1 ELSE 0 END) AS pendingCount,
+            SUM(CASE WHEN STATUS = 'RUNNING' THEN 1 ELSE 0 END) AS runningCount,
+            GROUP_CONCAT(DEVICE_ID) AS deviceIds,
+            MIN(CREATE_TIME) AS createTime,
+            MAX(EXECUTED_TIME) AS lastExecutedTime
+        FROM T_DEVICE_POINT_WRITE_COMMAND
+        WHERE
+        <include refid="taskHistoryFilter"/>
+        GROUP BY TASK_ID
+        <include refid="taskStatusHaving"/>
+        ORDER BY MAX(CREATE_TIME) DESC, TASK_ID DESC
+    </select>
+</mapper>

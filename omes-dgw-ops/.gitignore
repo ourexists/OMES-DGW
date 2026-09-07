@@ -1,0 +1,42 @@
+# =============================================================================
+# docker 子仓库：忽略本地配置、构建产物与 IDE 文件
+# 保留 *.example 模板；release/ 由 publish 生成，不入库
+# =============================================================================
+
+# --- 本地环境配置（含密码、Token，勿提交）---
+.env
+**/.env
+!**/.env.example
+
+init-influx.env
+influx-app-credentials.env
+!**/init-influx.env.example
+
+# --- 发布产物 ---
+release/
+
+# --- Docker 镜像 tar（build/images、deploy/images 等）---
+*.tar
+
+# --- 构建输入物（jar、前端 dist、打包用 nginx 副本）---
+*.jar
+build/packages/nginx/
+
+# --- IDE / 编辑器 ---
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- 操作系统 ---
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# --- 日志与临时文件 ---
+*.log
+*.tmp
+*.bak

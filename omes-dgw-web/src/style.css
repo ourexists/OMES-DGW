@@ -1,0 +1,184 @@
+/* OMES DGW 全局样式 — Fluent / --omes-* 主题 */
+@import './styles/tokens.css';
+@import './styles/fluent-overrides.css';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  font-family: var(--omes-font-family-base);
+  font-size: var(--omes-font-size-base);
+  line-height: var(--omes-line-height-base);
+  background-color: var(--omes-color-bg-layout);
+  color: var(--omes-color-text);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--omes-color-text) 22%, transparent);
+  border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--omes-color-text) 34%, transparent);
+}
+
+.page-container {
+  /* 作为 .content 下唯一弹性子项：占满可视区并由本层滚动，避免 height:100% 失效时被父级 overflow:hidden 裁切 */
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 20px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: var(--omes-font-weight-semibold);
+  color: var(--omes-color-text-heading);
+  border-left: 4px solid var(--omes-color-primary);
+  padding-left: 12px;
+  height: 24px;
+  line-height: 24px;
+}
+
+.stats-flow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.stat-flow-item {
+  min-width: 0;
+}
+
+.ant-modal-root .ant-modal-wrap {
+  overflow: hidden !important;
+}
+
+.ant-modal-root .ant-modal {
+  top: 24px;
+  padding-bottom: 0;
+  max-height: calc(100vh - 48px);
+}
+
+.ant-modal-root .ant-modal .ant-modal-content {
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+  border-radius: var(--omes-border-radius-x-large);
+  box-shadow: var(--omes-shadow-card);
+}
+
+.ant-modal-root .ant-modal .ant-modal-header,
+.ant-modal-root .ant-modal .ant-modal-footer {
+  flex-shrink: 0;
+}
+
+.ant-modal-root .ant-modal .ant-modal-body {
+  flex: 1;
+  min-height: 0;
+  padding-right: 20px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+@media screen and (max-width: 1280px) {
+  .page-container {
+    padding: 16px;
+  }
+
+  .page-header h2 {
+    font-size: 16px;
+  }
+
+  .ant-table {
+    font-size: 13px;
+  }
+
+  .ant-table-thead > tr > th,
+  .ant-table-tbody > tr > td {
+    padding: 12px 8px !important;
+  }
+}
+
+@media screen and (max-width: 1024px) {
+  .page-container {
+    padding: 12px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .page-header .ant-space {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .ant-form-inline {
+    flex-wrap: wrap;
+  }
+
+  .ant-form-inline .ant-form-item {
+    margin-bottom: 8px;
+  }
+
+  .ant-statistic-title {
+    font-size: 12px;
+  }
+
+  .ant-statistic-content {
+    font-size: 20px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .ant-col-6,
+  .ant-col-4 {
+    width: 50% !important;
+  }
+
+  .ant-col-8 {
+    width: 100% !important;
+    margin-bottom: 16px;
+  }
+
+  .ant-col-12 {
+    width: 100% !important;
+    margin-bottom: 16px;
+  }
+
+  .equipment-card {
+    margin-bottom: 12px;
+  }
+}

@@ -1,0 +1,274 @@
+/**
+
+ * OMES 管理端主题色 CSS 变量。
+
+ * 色值与 theme/tokens.ts 中 omesThemeTokens 保持同步（源自 Fluent UI webLightTheme）。
+
+ * 业务样式请使用 var(--omes-*) 引用，勿硬编码色值。
+
+ */
+
+:root {
+
+  /* 品牌色 — Fluent colorBrand* */
+
+  --omes-color-primary: #0078d4;
+
+  --omes-color-primary-hover: #0072ce;
+
+  --omes-color-primary-active: #004578;
+
+  --omes-color-primary-bg: #f0f9ff;
+
+  --omes-color-primary-bg-hover: #e4f5fd;
+
+  --omes-color-primary-border: #d0ecfc;
+
+
+
+  /* 布局 / 表面 — Fluent colorNeutralBackground* */
+
+  --omes-color-bg-layout: #f3f3f3;
+
+  --omes-color-bg-container: #ffffff;
+
+  --omes-color-white: #ffffff;
+
+  --omes-color-bg-elevated: #fafafa;
+
+  --omes-color-bg-spotlight: #fafafa;
+
+  --omes-color-bg-muted: #f5f5f5;
+
+  --omes-color-bg-toolbar-from: #fafafa;
+
+  --omes-color-bg-toolbar-to: #f5f5f5;
+
+  --omes-color-bg-table-head: #fafafa;
+
+  --omes-color-bg-table-head-alt: #f5f5f5;
+
+  --omes-color-bg-table-hover: #ebf3fc;
+
+  --omes-color-bg-table-hover-alt: #cfe4fa;
+
+  --omes-color-bg-standalone: #292929;
+
+
+
+  /* 边框 — Fluent colorNeutralStroke* */
+
+  --omes-color-border: #f0f0f0;
+
+  --omes-color-border-secondary: #e0e0e0;
+
+  --omes-color-border-tertiary: #ebebeb;
+
+  --omes-color-border-hover: #e0e0e0;
+
+
+
+  /* 文字 — Fluent colorNeutralForeground* */
+
+  --omes-color-text: #242424;
+
+  --omes-color-text-secondary: #424242;
+
+  --omes-color-text-tertiary: #616161;
+
+  --omes-color-text-quaternary: #707070;
+
+  --omes-color-text-placeholder: #707070;
+
+  --omes-color-text-heading: #242424;
+
+  --omes-color-text-label: #424242;
+
+
+
+  /* 语义色 — Fluent colorStatus* */
+
+  --omes-color-success: #0e700e;
+
+  --omes-color-success-bg: #f1faf1;
+
+  --omes-color-success-border: #9fd89f;
+
+  --omes-color-warning: #bc4b09;
+
+  --omes-color-error: #b10e1c;
+
+  --omes-color-info: #0078d4;
+
+
+
+  /* 模块强调色 — Fluent colorPalette* */
+
+  --omes-color-accent-purple-from: #5c2e91;
+
+  --omes-color-accent-purple-to: #881798;
+
+  --omes-color-accent-orange-from: #da3b01;
+
+  --omes-color-accent-orange-to: #ca5010;
+
+  --omes-color-accent-orange-light-to: #ff8c00;
+
+  --omes-color-accent-cyan-from: #038387;
+
+  --omes-color-accent-cyan-to: #00b7c3;
+
+  --omes-color-accent-cyan-bg: #a6e9ed;
+
+  --omes-color-accent-cyan-border: #00b7c3;
+
+
+
+  /* 图表调色板 */
+
+  --omes-color-chart-palette-0: #0078d4;
+
+  --omes-color-chart-palette-1: #5c2e91;
+
+  --omes-color-chart-palette-2: #038387;
+
+  --omes-color-chart-palette-3: #bf0077;
+
+  --omes-color-chart-palette-4: #eaa300;
+
+  --omes-color-chart-palette-5: #107c10;
+
+
+
+  /* Fluent 排版 / 圆角 / 间距 */
+
+  --omes-font-family-base: "Segoe UI Variable", "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  --omes-font-size-base: 14px;
+
+  --omes-line-height-base: 20px;
+
+  --omes-font-weight-regular: 400;
+
+  --omes-font-weight-semibold: 600;
+
+  --omes-border-radius-small: 2px;
+
+  --omes-border-radius-medium: 4px;
+
+  --omes-border-radius-large: 8px;
+
+  --omes-border-radius-x-large: 8px;
+
+  --omes-spacing-horizontal-m: 12px;
+
+  --omes-spacing-vertical-m: 12px;
+
+
+
+  /* 渐变（引用上方色值） */
+
+  --omes-gradient-primary: linear-gradient(
+
+    135deg,
+
+    var(--omes-color-primary) 0%,
+
+    var(--omes-color-primary-hover) 100%
+
+  );
+
+  --omes-gradient-card-head: linear-gradient(
+
+    180deg,
+
+    var(--omes-color-bg-spotlight) 0%,
+
+    var(--omes-color-bg-container) 100%
+
+  );
+
+  --omes-gradient-toolbar: linear-gradient(
+
+    180deg,
+
+    var(--omes-color-bg-toolbar-from) 0%,
+
+    var(--omes-color-bg-toolbar-to) 100%
+
+  );
+
+  --omes-gradient-accent-purple: linear-gradient(
+
+    135deg,
+
+    var(--omes-color-accent-purple-from) 0%,
+
+    var(--omes-color-accent-purple-to) 100%
+
+  );
+
+  --omes-gradient-accent-orange: linear-gradient(
+
+    135deg,
+
+    var(--omes-color-accent-orange-from) 0%,
+
+    var(--omes-color-accent-orange-to) 100%
+
+  );
+
+  --omes-gradient-accent-orange-light: linear-gradient(
+
+    135deg,
+
+    var(--omes-color-accent-orange-from) 0%,
+
+    var(--omes-color-accent-orange-light-to) 100%
+
+  );
+
+  --omes-gradient-accent-cyan: linear-gradient(
+
+    135deg,
+
+    var(--omes-color-accent-cyan-from) 0%,
+
+    var(--omes-color-accent-cyan-to) 100%
+
+  );
+
+
+
+  /* 阴影 — Fluent shadow tokens */
+
+  --omes-shadow-card: 0 0 2px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.14);
+
+  --omes-shadow-card-sm: 0 0 2px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.14);
+
+  --omes-shadow-primary-icon: 0 0 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(15, 108, 189, 0.24);
+
+  --omes-shadow-purple-icon: 0 0 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(92, 46, 145, 0.24);
+
+  --omes-shadow-orange-icon: 0 0 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(218, 59, 1, 0.24);
+
+  --omes-shadow-cyan-icon: 0 0 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(3, 131, 135, 0.24);
+
+  --omes-shadow-primary-soft: 0 0 2px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(15, 108, 189, 0.14);
+
+  --omes-shadow-cyan-soft: 0 0 2px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(3, 131, 135, 0.12);
+
+  --omes-shadow-success-soft: 0 0 2px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(16, 124, 16, 0.1);
+
+
+
+  /* 圆角别名（兼容旧引用） */
+
+  --omes-radius-sm: var(--omes-border-radius-medium);
+
+  --omes-radius-md: var(--omes-border-radius-x-large);
+
+  --omes-radius-lg: var(--omes-border-radius-x-large);
+
+}
+

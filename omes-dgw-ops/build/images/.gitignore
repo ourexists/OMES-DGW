@@ -1,0 +1,3 @@
+# docker save 产出（omes-dgw-service、omes-dgw-front、redis、influxdb）
+# 由 打包全部.bat / build-middleware.ps1 生成
+*.tar

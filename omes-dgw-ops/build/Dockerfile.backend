@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+# Build context: docker/build/packages (must contain the backend jar)
+
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+
+ARG JAR_FILE=omes-dgw-server-1.0-SNAPSHOT-exec.jar
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system app && useradd --system --gid app app \
+    && mkdir -p /app/config /app/monitoring /app/logs /app/data /app/plugins \
+    && chown -R app:app /app
+
+COPY ${JAR_FILE} /app/app.jar
+
+USER app
+EXPOSE 12010
+
+ENV SERVER_PORT=12010 \
+    LOG_PATH=/app/logs \
+    JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Dloader.path=/app/plugins -jar /app/app.jar"]

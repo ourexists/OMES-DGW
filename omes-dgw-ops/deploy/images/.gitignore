@@ -1,0 +1,2 @@
+# 实施包内预置镜像 tar，由研发 publish 复制，现场 03-启动.bat docker load
+*.tar

@@ -1,0 +1,78 @@
+# omes-dgw-server Prometheus 告警规则
+# 加载方式（Prometheus 2.x）：
+#   rule_files:
+#     - /etc/prometheus/rules/omes-dgw-server.yml
+# 指标来自 /actuator/prometheus（Micrometer 命名：点号 → 下划线）
+
+groups:
+  - name: omes-dgw-server
+    interval: 30s
+    rules:
+      # 任意设备轮询成功率 < 80%，持续 3 分钟（有流量前提下）
+      - alert: CollectPollSuccessRateLow
+        expr: |
+          (
+            sum by (device_id, protocol) (rate(collect_protocol_poll_total{result="success"}[3m]))
+            /
+            sum by (device_id, protocol) (rate(collect_protocol_poll_total[3m]))
+          ) < 0.8
+          and sum by (device_id, protocol) (rate(collect_protocol_poll_total[3m])) > 0.01
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "设备采集成功率过低 ({{ $labels.device_id }})"
+          description: "协议 {{ $labels.protocol }} 设备 {{ $labels.device_id }} 近 3 分钟轮询成功率约 {{ printf \"%.1f\" $value }}（<0.8）。"
+
+      # 设备离线持续超过 5 分钟
+      - alert: CollectDeviceOfflineTooLong
+        expr: collect_device_offline_duration_seconds > 300
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "设备离线过久 ({{ $labels.device_id }})"
+          description: "设备 {{ $labels.device_id }} 已离线约 {{ $value | humanizeDuration }}，请检查连接、PLC 与采集任务。"
+
+      # 历史快照待写 Influx 队列积压（默认上限 50000，告警 40000）
+      - alert: CollectHistoryQueueBacklog
+        expr: collect_queue_depth{queue="history"} > 40000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Influx 历史队列积压"
+          description: "历史快照队列深度 {{ $value }}，Influx 写入可能瓶颈，请检查 Influx 连通性与 COLLECT_HISTORY_* 配置。"
+
+      # SQLite HikariCP 活跃连接 > 80% 上限（默认池大小为 1，通常仅作异常信号）
+      - alert: CollectDbPoolActiveHigh
+        expr: |
+          hikaricp_connections_active
+          / hikaricp_connections_max > 0.8
+          and hikaricp_connections_max > 0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "数据库连接池使用率过高"
+          description: "HikariCP 活跃连接占比约 {{ printf \"%.0f\" $value }}（>0.8），请检查慢 SQL 或 SQLite 锁等待。"
+
+      # 单次 GC 暂停超过 500ms（近 3 分钟内观测到的最大值）
+      - alert: CollectJvmGcPauseHigh
+        expr: max_over_time(jvm_gc_pause_seconds_max[3m]) > 0.5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JVM GC 暂停过长"
+          description: "近 3 分钟观测到 GC 单次暂停最大约 {{ $value }}s，可能影响采集实时性，请检查堆内存与 GC 日志。"
+
+      # 补充：历史队列超限丢弃
+      - alert: CollectHistoryQueueTrimmed
+        expr: increase(collect_queue_trimmed_total{queue="history"}[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "历史队列丢弃旧数据"
+          description: "5 分钟内历史队列因超限丢弃 {{ $value }} 条，存在数据丢失风险。"

@@ -1,0 +1,43 @@
+/**
+ * OMES DGW Fluent / 微软风格覆盖（精简自 omes-web-admin）
+ */
+:root {
+  --omes-fluent-divider: rgba(0, 0, 0, 0.04);
+  --omes-fluent-table-border: var(--omes-color-border-secondary);
+  --omes-fluent-surface-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.03);
+  --omes-fluent-focus-ring: 0 0 0 2px rgba(0, 120, 212, 0.2);
+  --omes-fluent-mica: linear-gradient(180deg, #fafafa 0%, #f3f3f3 100%);
+}
+
+html,
+body,
+#app {
+  background: var(--omes-color-bg-layout);
+  font-family: var(--omes-font-family-base);
+}
+
+.ant-card {
+  border: none;
+  border-radius: var(--omes-border-radius-x-large);
+  box-shadow: var(--omes-fluent-surface-shadow);
+  overflow: hidden;
+}
+
+.ant-card-head {
+  border-bottom: 1px solid var(--omes-fluent-divider);
+  min-height: 48px;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th {
+  font-weight: var(--omes-font-weight-semibold);
+  color: var(--omes-color-text-secondary);
+  background: var(--omes-color-bg-table-head) !important;
+}
+
+.ant-btn-primary {
+  box-shadow: none;
+}
+
+.ant-btn-primary:not(:disabled):hover {
+  box-shadow: var(--omes-fluent-focus-ring);
+}

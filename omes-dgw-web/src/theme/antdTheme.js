@@ -1,0 +1,87 @@
+/**
+ * OMES DGW Ant Design Vue 主题（对齐 omes-web-admin Fluent / --omes-* 主色）
+ * 不依赖 @fluentui/react-theme，色值与 styles/tokens.css 保持一致。
+ */
+export const omesAntdTheme = {
+  token: {
+    colorPrimary: '#0078d4',
+    colorPrimaryHover: '#0072ce',
+    colorPrimaryActive: '#004578',
+    colorSuccess: '#0e700e',
+    colorWarning: '#bc4b09',
+    colorError: '#b10e1c',
+    colorInfo: '#0078d4',
+    colorTextBase: '#242424',
+    colorBgBase: '#ffffff',
+    colorBgLayout: '#f3f3f3',
+    colorBgContainer: '#ffffff',
+    colorBgElevated: '#fafafa',
+    colorText: '#242424',
+    colorTextSecondary: '#424242',
+    colorTextTertiary: '#707070',
+    colorTextQuaternary: '#707070',
+    colorBorder: '#f0f0f0',
+    colorBorderSecondary: '#e0e0e0',
+    lineWidth: 1,
+    lineWidthBold: 1,
+    borderRadius: 4,
+    borderRadiusLG: 8,
+    borderRadiusSM: 4,
+    fontFamily:
+      '"Segoe UI Variable", "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+    fontSize: 14,
+    lineHeight: 1.4286,
+    controlHeight: 32,
+    wireframe: false,
+    boxShadow: '0 0 2px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.14)',
+    boxShadowSecondary: '0 0 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.14)',
+  },
+  components: {
+    Layout: {
+      colorBgHeader: '#ffffff',
+      colorBgBody: '#f3f3f3',
+      colorBgTrigger: '#f5f5f5',
+      siderBg: '#fafafa',
+      triggerBg: '#f5f5f5',
+      triggerColor: '#242424',
+    },
+    Menu: {
+      colorItemBg: 'transparent',
+      colorItemText: '#424242',
+      colorItemBgHover: '#f5f5f5',
+      colorItemTextHover: '#242424',
+      colorItemBgSelected: '#f0f9ff',
+      colorItemTextSelected: '#0078d4',
+      colorSubItemBg: 'transparent',
+      itemMarginInline: 8,
+      radiusItem: 4,
+      darkItemBg: 'transparent',
+      darkSubMenuItemBg: 'transparent',
+      darkItemColor: '#424242',
+      darkItemHoverBg: '#f5f5f5',
+      darkItemSelectedBg: '#f0f9ff',
+      darkItemSelectedColor: '#0078d4',
+    },
+    Table: {
+      borderColor: '#e0e0e0',
+      headerSplitColor: '#e0e0e0',
+      headerBg: '#fafafa',
+    },
+    Card: {
+      headerBg: 'transparent',
+      borderRadiusLG: 8,
+    },
+    Button: {
+      borderRadius: 4,
+      controlHeight: 32,
+    },
+    Input: {
+      borderRadius: 4,
+      controlHeight: 32,
+    },
+    Select: {
+      borderRadius: 4,
+      controlHeight: 32,
+    },
+  },
+}

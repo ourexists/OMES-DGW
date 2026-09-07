@@ -1,0 +1,6 @@
+# 后端 jar / 预导出的镜像 tar（mvn package 或手工放入）
+*.jar
+*.tar
+
+# 前端打包时从 omes-dgw-front/nginx 复制的 nginx 配置
+nginx/
