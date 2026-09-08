@@ -84,7 +84,12 @@ public final class ExternalPropertiesFile {
             }
         }
 
-        Files.write(file, lines, StandardCharsets.UTF_8);
+        Path temporary = Files.createTempFile(file.toAbsolutePath().getParent(), ".config-", ".tmp");
+        try {
+            Files.write(temporary, lines, StandardCharsets.UTF_8);
+            Files.move(temporary, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                    java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+        } finally { Files.deleteIfExists(temporary); }
     }
 
     private static String unescape(String raw) {

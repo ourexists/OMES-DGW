@@ -1,13 +1,5 @@
 <template>
   <div class="store-plugin-panel">
-    <a-alert
-      v-if="restartHint"
-      type="warning"
-      show-icon
-      class="panel-banner"
-      :message="restartHint"
-    />
-
     <a-spin :spinning="loading">
       <div class="plugin-grid" :class="{ 'plugin-grid--single': visiblePlugins.length === 1 }">
         <article
@@ -29,8 +21,6 @@
             </div>
           </div>
 
-          <p class="plugin-card__desc">{{ plugin.description }}</p>
-
           <div class="plugin-card__stats">
             <div class="stat">
               <span class="stat__label">安装包</span>
@@ -39,10 +29,6 @@
             <div class="stat">
               <span class="stat__label">运行时</span>
               <span class="stat__value">{{ plugin.loaded ? '已加载' : '未加载' }}</span>
-            </div>
-            <div class="stat">
-              <span class="stat__label">启用状态</span>
-              <span class="stat__value">{{ plugin.active ? '运行中' : '未启用' }}</span>
             </div>
           </div>
 
@@ -73,6 +59,9 @@
               <SettingOutlined />
               配置
             </a-button>
+            <a-button :disabled="!plugin.installed || toggling" :loading="toggling" @click="togglePlugin(plugin)">
+              {{ plugin.active ? '停用' : '启用' }}
+            </a-button>
             <a-dropdown :disabled="!plugin.installed">
               <a-button>
                 更多
@@ -81,7 +70,7 @@
               <template #overlay>
                 <a-menu>
                   <a-menu-item key="remove" danger @click="handleRemove(plugin.type)">
-                    卸载插件文件
+                    卸载插件
                   </a-menu-item>
                 </a-menu>
               </template>
@@ -156,6 +145,7 @@ import {
   getStorePluginStatus,
   uploadStorePlugin,
   removeStorePlugin,
+  saveStorePluginConfig,
   probeRedis,
   probeInflux,
   getRuntimeConfigSection
@@ -170,7 +160,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['status-change'])
+const emit = defineEmits(['status-change', 'config-saved'])
 
 const loading = ref(false)
 const uploadingRedis = ref(false)
@@ -178,6 +168,7 @@ const uploadingInflux = ref(false)
 const removingRedis = ref(false)
 const removingInflux = ref(false)
 const probing = ref(false)
+const toggling = ref(false)
 const status = ref(null)
 const drawerOpen = ref(false)
 const drawerType = ref('')
@@ -191,20 +182,11 @@ const updateDrawerWidth = () => {
 const redis = computed(() => status.value?.redis)
 const influx = computed(() => status.value?.influx)
 
-const restartHint = computed(() => {
-  const hints = []
-  const showRedis = props.types.includes('redis')
-  const showInflux = props.types.includes('influx')
-  if (showRedis && redis.value?.restartRequired) hints.push(redis.value.hint)
-  if (showInflux && influx.value?.restartRequired) hints.push(influx.value.hint)
-  return hints.filter(Boolean)[0] || ''
-})
-
 const allPlugins = computed(() => {
   const r = redis.value || {}
   const i = influx.value || {}
-  const redisActive = r.activeStoreBackend === 'redis' && r.onClasspath
-  const influxActive = Boolean(i.enabled && i.onClasspath)
+  const redisActive = r.activeStoreBackend === 'redis' && r.loaded
+  const influxActive = Boolean(i.enabled && i.loaded)
 
   return [
     {
@@ -212,18 +194,18 @@ const allPlugins = computed(() => {
       sectionId: 'plugin-redis',
       name: 'Redis 缓存与刷数',
       vendor: 'omes-dgw-plugin-redis',
-      description: '上传后在「配置」中填写连接与键空间。上方可先选择存储后端为 redis。',
+      description: '配置 Redis 连接与键空间。',
       icon: DatabaseOutlined,
       iconBg: 'rgba(220, 38, 38, 0.1)',
       iconColor: '#dc2626',
       installed: Boolean(r.jarPresent),
-      loaded: Boolean(r.onClasspath),
+      loaded: Boolean(r.loaded),
       active: redisActive,
       jarName: r.jarNames?.[0] || '',
       hint: r.hint || '',
       uploading: uploadingRedis.value,
-      statusLabel: redisActive ? '运行中' : r.jarPresent || r.onClasspath ? '已安装' : '未安装',
-      statusColor: redisActive ? 'success' : r.jarPresent || r.onClasspath ? 'processing' : 'default',
+      statusLabel: redisActive ? '运行中' : r.jarPresent || r.loaded ? '已安装' : '未安装',
+      statusColor: redisActive ? 'success' : r.jarPresent || r.loaded ? 'processing' : 'default',
       configTabs: [
         { key: 'connection', label: '连接管理', groups: ['连接管理'] },
         { key: 'extra', label: '键空间', groups: ['键空间'] }
@@ -234,18 +216,18 @@ const allPlugins = computed(() => {
       sectionId: 'plugin-influx',
       name: 'InfluxDB 监控采集',
       vendor: 'omes-dgw-plugin-influx',
-      description: '上传后在「配置」中填写连接管理，以及历史/指标落库参数。',
+      description: '配置 InfluxDB 连接与历史、指标存储。',
       icon: CloudServerOutlined,
       iconBg: 'rgba(22, 119, 255, 0.1)',
       iconColor: '#1677ff',
       installed: Boolean(i.jarPresent),
-      loaded: Boolean(i.onClasspath),
+      loaded: Boolean(i.loaded),
       active: influxActive,
       jarName: i.jarNames?.[0] || '',
       hint: i.hint || '',
       uploading: uploadingInflux.value,
-      statusLabel: influxActive ? '运行中' : i.jarPresent || i.onClasspath ? '已安装' : '未安装',
-      statusColor: influxActive ? 'success' : i.jarPresent || i.onClasspath ? 'processing' : 'default',
+      statusLabel: influxActive ? '运行中' : i.jarPresent || i.loaded ? '已安装' : '未安装',
+      statusColor: influxActive ? 'success' : i.jarPresent || i.loaded ? 'processing' : 'default',
       configTabs: [
         { key: 'connection', label: '连接管理', groups: ['连接管理'] },
         { key: 'store', label: '落库参数', groups: ['历史落库', '指标落库'] }
@@ -283,7 +265,7 @@ const beforeUpload = (type, file) => {
     .then(res => {
       status.value = res.data
       emit('status-change', res.data)
-      message.success('插件已上传，请填写连接等配置')
+      message.success('插件包已保存；运行中的插件已在线更新')
       drawerType.value = type
       drawerTab.value = 'connection'
       drawerOpen.value = true
@@ -302,13 +284,27 @@ const openConfig = plugin => {
 
 const onConfigSaved = () => {
   loadStatus()
+  emit('config-saved')
+}
+
+const togglePlugin = async plugin => {
+  toggling.value = true
+  try {
+    const data = plugin.type === 'redis'
+      ? { section: 'redis', storeBackend: plugin.active ? 'caffeine' : 'redis' }
+      : { section: 'influx', influxEnabled: !plugin.active }
+    const res = await saveStorePluginConfig(data)
+    status.value = res.data
+    emit('status-change', res.data)
+    message.success(plugin.active ? '插件已停用' : '插件已启用')
+  } finally { toggling.value = false }
 }
 
 const handleRemove = type => {
   const label = type === 'redis' ? 'Redis 缓存与刷数' : 'InfluxDB 监控采集'
   Modal.confirm({
     title: `卸载 ${label}？`,
-    content: '将删除 plugins 目录中的 jar 文件。已保存的配置仍保留，可稍后重新上传。',
+    content: '将在线停用并删除插件包。Redis 会切回本地缓存；Influx 待写队列保留，重新启用后写入所配置的目标。连接配置仍保留。',
     okText: '卸载',
     okType: 'danger',
     onOk: async () => {
@@ -319,7 +315,7 @@ const handleRemove = type => {
         status.value = res.data
         emit('status-change', res.data)
         if (drawerType.value === type) drawerOpen.value = false
-        message.success('插件文件已卸载')
+        message.success('插件已停用并卸载')
       } finally {
         removing.value = false
       }
@@ -374,10 +370,6 @@ defineExpose({ reload: loadStatus })
 </script>
 
 <style scoped>
-.panel-banner {
-  margin-bottom: 12px;
-}
-
 .plugin-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -446,16 +438,9 @@ defineExpose({ reload: loadStatus })
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-.plugin-card__desc {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--omes-color-text-secondary, rgba(0, 0, 0, 0.55));
-}
-
 .plugin-card__stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   padding: 12px;
   background: var(--omes-color-bg-muted, #f7f8fa);

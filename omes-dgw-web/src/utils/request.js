@@ -55,6 +55,8 @@ request.interceptors.response.use(
       if (window.location.hash !== '#/login') {
         window.location.href = '/#/login'
       }
+    } else if (error.config?.silent) {
+      return Promise.reject(error)
     } else if (status === 403) {
       message.error('没有权限访问')
     } else if (status === 404) {

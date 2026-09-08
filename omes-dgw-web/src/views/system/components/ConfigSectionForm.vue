@@ -8,13 +8,14 @@
         <div v-if="block.title" class="field-block__head">
           <h4>{{ block.title }}</h4>
         </div>
-        <div class="field-grid">
+        <div class="field-grid" :class="{ 'field-grid--custom': $slots.field }">
           <div
             v-for="field in block.fields"
             :key="field.key"
             class="field-cell"
             :class="fieldCellClass(field)"
           >
+            <slot name="field" :field="field" :values="form">
             <a-form-item :label="field.label" :extra="field.hint || undefined">
               <a-switch
                 v-if="field.type === 'boolean'"
@@ -26,7 +27,7 @@
               <a-select
                 v-else-if="field.type === 'select'"
                 v-model:value="form[field.key]"
-                :options="(field.options || []).map(o => ({ label: o, value: o }))"
+                :options="(field.options || []).map(o => ({ label: field.key === 'COLLECT_MONITOR_TYPE' ? (o === 'influxdb' ? 'Influxdb' : '无') : o, value: o }))"
                 style="width: 100%"
               />
               <a-input-password
@@ -49,12 +50,14 @@
                 allow-clear
               />
             </a-form-item>
+            </slot>
           </div>
         </div>
       </div>
 
+      <slot name="before-footer" :values="form" />
       <div v-if="!hideFooter" class="form-footer">
-        <div class="form-footer__hint">保存写入 config/config.properties，多数项需重启后完全生效。</div>
+        <div class="form-footer__hint">{{ sectionId.startsWith('plugin-') ? '保存后在线生效，无需重启。' : '保存后，部分配置需重启生效。' }}</div>
         <a-space wrap>
           <slot name="extra-actions" />
           <a-button :loading="loading" @click="reload">重置</a-button>
@@ -76,6 +79,7 @@ const props = defineProps({
   compact: { type: Boolean, default: false },
   hideDescription: { type: Boolean, default: false },
   hideFooter: { type: Boolean, default: false },
+  visibleKeys: { type: Array, default: null },
   /** 仅展示并保存这些 groupLabel；空/不传则全部 */
   visibleGroups: { type: Array, default: null }
 })
@@ -90,7 +94,7 @@ const numberModel = reactive({})
 const clearSecrets = reactive({})
 
 const visibleFields = computed(() => {
-  const fields = section.value?.fields || []
+  const fields = (section.value?.fields || []).filter(field => !props.visibleKeys || props.visibleKeys.includes(field.key))
   const groups = props.visibleGroups
   if (!groups || !groups.length) return fields
   return fields.filter(f => groups.includes(f.groupLabel))
@@ -261,6 +265,10 @@ defineExpose({ reload, save: handleSave, getValues: () => ({ ...form }) })
 }
 
 .field-cell--full {
+  grid-column: span 12;
+}
+
+.field-grid--custom .field-cell {
   grid-column: span 12;
 }
 

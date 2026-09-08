@@ -141,13 +141,13 @@ spring:
 
 | 环境变量 | 默认 | 对应 yml 路径 | 说明 |
 |----------|------|---------------|------|
-| `INFLUX_ENABLED` | false | `app.influx.enabled` | 是否启用 Influx（需导入 `omes-dgw-plugin-influx`） |
+| `COLLECT_MONITOR_TYPE` | none | `app.collect.monitor-type` | 采集监控类型：none（无）、influxdb（需导入 `omes-dgw-plugin-influx`） |
 | `INFLUX_URL` | http://localhost:8086 | `app.influx.url` | HTTP API 地址 |
 | `INFLUX_TOKEN` | （见 yml） | `app.influx.token` | API Token |
 | `INFLUX_ORG` | omes | `app.influx.org` | 组织名 |
 | `INFLUX_BUCKET` | collect_metrics | `app.influx.bucket` | Bucket（指标与快照历史共用） |
 
-> **依赖关系**：`COLLECT_HISTORY_ENABLED` 与 `METRICS_PERSIST_INFLUX` 均需 `INFLUX_ENABLED=true` 且已加载 Influx 插件才会实际落库。无插件时请保持 `INFLUX_ENABLED=false`。
+> **依赖关系**：`COLLECT_HISTORY_ENABLED` 与 `METRICS_PERSIST_INFLUX` 均需 `COLLECT_MONITOR_TYPE=influxdb` 且已加载 Influx 插件才会实际落库。无插件时请保持 `COLLECT_MONITOR_TYPE=none`。
 
 ### 1.3 配置示例
 

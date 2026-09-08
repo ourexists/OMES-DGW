@@ -1,4 +1,4 @@
-package com.omes.dgw.influx;
+package com.omes.dgw.timeseries;
 
 /**
  * 根据查询时间跨度与目标点数，计算 Influx {@code aggregateWindow} 的窗口宽度。
@@ -16,9 +16,8 @@ public final class SnapshotChartAggregateResolver {
     }
 
     /**
-     * @param spanSeconds           查询时间跨度（秒）
-     * @param collectIntervalSec    设备采集周期（秒）
-     * @param maxPointsPerSeries    单序列折线图最大点数
+     * @param aggregated           查询时间跨度（秒）
+     * @param sampleIntervalSec    设备采集周期（秒）
      * @param fluxEveryOrNull       非聚合时为 null；聚合时为 Influx duration（如 {@code 30s}、{@code 5m}）
      */
     public record ResolveResult(boolean aggregated, int sampleIntervalSec, String fluxEveryOrNull) {

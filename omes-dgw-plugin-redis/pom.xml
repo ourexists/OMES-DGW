@@ -16,6 +16,7 @@
     <packaging>jar</packaging>
 
     <dependencies>
+        <dependency><groupId>com.omes.dgw</groupId><artifactId>omes-dgw-plugin-api</artifactId><version>${project.version}</version><scope>provided</scope></dependency>
         <!-- 编译期使用主应用接口；运行时由主应用提供 -->
         <dependency>
             <groupId>com.omes.dgw</groupId>
@@ -53,6 +54,12 @@
 
     <build>
         <plugins>
+            <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId>
+              <configuration><archive><manifestEntries>
+                <Plugin-Id>redis</Plugin-Id><Plugin-Class>com.omes.dgw.store.redis.RedisPlugin</Plugin-Class>
+                <Plugin-Version>1.0.0</Plugin-Version><Plugin-Requires>1.0.0</Plugin-Requires>
+              </manifestEntries></archive></configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

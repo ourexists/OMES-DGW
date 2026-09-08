@@ -1,4 +1,4 @@
-package com.omes.dgw.influx;
+package com.omes.dgw.timeseries;
 
 import com.omes.dgw.device.cache.DeviceRealtimeObj;
 

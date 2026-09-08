@@ -3,8 +3,19 @@ import request from '@/utils/request'
 let deviceCategoriesAllRequest = null
 let deviceProtocolsRequest = null
 
-// 获取全部设备分组，只请求一次并复用同一个请求结果
-export function getDeviceCategoriesAll() {
+async function mutateDeviceCategory(action, data) {
+  const response = await request({ url: `/device/categories/${action}`, method: 'post', data })
+  deviceCategoriesAllRequest = null
+  return response
+}
+
+export const createDeviceCategory = data => mutateDeviceCategory('create', data)
+export const updateDeviceCategory = data => mutateDeviceCategory('update', data)
+export const deleteDeviceCategory = id => mutateDeviceCategory('delete', { id })
+
+// 获取全部设备分组，默认复用请求结果，刷新时重新请求
+export function getDeviceCategoriesAll(refresh = false) {
+  if (refresh) deviceCategoriesAllRequest = null
   if (!deviceCategoriesAllRequest) {
     deviceCategoriesAllRequest = request({
       url: '/device/categories/all',

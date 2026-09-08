@@ -1,8 +1,8 @@
 package com.omes.dgw.store.influx;
 
 import com.omes.dgw.config.AppProperties;
-import com.omes.dgw.influx.DeviceRealtimeHistoryWriter;
-import com.omes.dgw.influx.InfluxRuntime;
+import com.omes.dgw.timeseries.DeviceRealtimeHistoryWriter;
+import com.omes.dgw.timeseries.InfluxRuntime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -15,7 +15,7 @@ import org.springframework.core.annotation.Order;
  */
 @Slf4j
 @Order(100)
-@ConditionalOnProperty(prefix = "app.influx", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "app.collect", name = "monitor-type", havingValue = "influxdb")
 @ConditionalOnBean(InfluxRuntime.class)
 public class InfluxCollectHistoryHealthChecker implements ApplicationRunner {
 

@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Configuration;
 /**
  * 配置了 store-backend=redis 但 classpath 无 Redis 客户端时快速失败，提示引入插件包。
  */
-@Configuration
 @ConditionalOnProperty(prefix = "app.collect", name = "store-backend", havingValue = "redis")
 @ConditionalOnMissingClass("org.springframework.data.redis.core.StringRedisTemplate")
 public class RedisStoreMissingConfiguration {

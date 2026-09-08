@@ -68,7 +68,7 @@ function Sync-DeployConfigProperties {
 
     $syncKeys = @(
         "SQLITE_PATH", "FLYWAY_ENABLED",
-        "INFLUX_ENABLED", "INFLUX_URL", "INFLUX_TOKEN", "INFLUX_ORG", "INFLUX_BUCKET"
+        "COLLECT_MONITOR_TYPE", "INFLUX_URL", "INFLUX_TOKEN", "INFLUX_ORG", "INFLUX_BUCKET"
     )
 
     $lines = Get-Content -LiteralPath $ConfigPath -Encoding UTF8

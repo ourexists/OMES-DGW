@@ -21,4 +21,4 @@ EXPOSE 12010
 ENV SERVER_PORT=12010 \
     LOG_PATH=/app/logs \
     JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Dloader.path=/app/plugins -jar /app/app.jar"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

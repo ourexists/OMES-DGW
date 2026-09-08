@@ -26,7 +26,7 @@ public class StorePluginStatusVo {
     public static class RedisSection {
         private String activeStoreBackend;
         private String configuredStoreBackend;
-        private boolean onClasspath;
+        private boolean loaded;
         private boolean jarPresent;
         private List<String> jarNames;
         private boolean restartRequired;
@@ -44,7 +44,7 @@ public class StorePluginStatusVo {
     public static class InfluxSection {
         /** 当前进程生效的 enabled */
         private boolean enabled;
-        /** config.properties 中配置的 enabled（可能尚未重启） */
+        /** config.properties 中配置的 enabled（用于下次启动恢复） */
         private boolean configuredEnabled;
         private String url;
         private String org;
@@ -52,7 +52,7 @@ public class StorePluginStatusVo {
         private boolean tokenSet;
         private boolean historyEnabled;
         private boolean persistMetrics;
-        private boolean onClasspath;
+        private boolean loaded;
         private boolean jarPresent;
         private List<String> jarNames;
         private boolean restartRequired;

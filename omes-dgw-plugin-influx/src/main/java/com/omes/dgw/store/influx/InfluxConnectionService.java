@@ -5,7 +5,7 @@ import com.influxdb.client.QueryApi;
 import com.influxdb.client.WriteApiBlocking;
 import com.influxdb.client.domain.HealthCheck;
 import com.omes.dgw.config.AppProperties;
-import com.omes.dgw.influx.InfluxRuntime;
+import com.omes.dgw.timeseries.InfluxRuntime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -15,7 +15,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
  * 由 {@link InfluxStoreAutoConfiguration} {@code @Import} 注册（勿加 {@code @Service}，避免与组件扫描重复）。
  */
 @Slf4j
-@ConditionalOnProperty(prefix = "app.influx", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "app.collect", name = "monitor-type", havingValue = "influxdb")
 @ConditionalOnBean(InfluxDBClient.class)
 public class InfluxConnectionService implements InfluxRuntime {
 

@@ -6,7 +6,6 @@ import com.omes.dgw.deploy.dto.PluginProbeResultVo;
 import com.omes.dgw.deploy.dto.StorePluginConfigRequest;
 import com.omes.dgw.deploy.dto.StorePluginStatusVo;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,17 +36,14 @@ public class StorePluginService {
 
     private static final String REDIS_MARKER = "omes-dgw-plugin-redis";
     private static final String INFLUX_MARKER = "omes-dgw-plugin-influx";
-    private static final String REDIS_AUTO_CONFIG =
-            "com.omes.dgw.store.redis.RedisStoreAutoConfiguration";
-    private static final String INFLUX_AUTO_CONFIG =
-            "com.omes.dgw.store.influx.InfluxStoreAutoConfiguration";
-
     private final DeployPaths deployPaths;
     private final AppProperties appProperties;
+    private final com.omes.dgw.plugin.StorePluginRuntime runtime;
 
-    public StorePluginService(DeployPaths deployPaths, AppProperties appProperties) {
+    public StorePluginService(DeployPaths deployPaths, AppProperties appProperties, com.omes.dgw.plugin.StorePluginRuntime runtime) {
         this.deployPaths = deployPaths;
         this.appProperties = appProperties;
+        this.runtime = runtime;
     }
 
     public StorePluginStatusVo status() {
@@ -76,22 +72,23 @@ public class StorePluginService {
             throw new BusinessException("仅支持 .jar 文件");
         }
         String marker = markerFor(pluginType);
-        if (!name.contains(marker)) {
+        if (!name.startsWith(marker + "-")) {
             throw new BusinessException("文件名需包含 " + marker + "（推荐 *-plugin.jar）");
         }
 
         try {
             Files.createDirectories(deployPaths.pluginsDir());
-            for (Path old : listPluginJars(pluginType)) {
-                Files.deleteIfExists(old);
-            }
             Path target = deployPaths.pluginsDir().resolve(name).normalize();
             if (!target.startsWith(deployPaths.pluginsDir())) {
                 throw new BusinessException("非法文件路径");
             }
-            try (InputStream in = file.getInputStream()) {
-                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
-            }
+            Path staged = Files.createTempFile(deployPaths.pluginsDir(), ".upload-", ".tmp");
+            try {
+                try (InputStream in = file.getInputStream()) {
+                    Files.copy(in, staged, StandardCopyOption.REPLACE_EXISTING);
+                }
+                runtime.install(pluginType, staged, target);
+            } finally { Files.deleteIfExists(staged); }
             return status();
         } catch (BusinessException e) {
             throw e;
@@ -103,9 +100,7 @@ public class StorePluginService {
     public StorePluginStatusVo removePlugin(String type) {
         String pluginType = normalizeType(type);
         try {
-            for (Path jar : listPluginJars(pluginType)) {
-                Files.deleteIfExists(jar);
-            }
+            runtime.remove(pluginType);
             return status();
         } catch (IOException e) {
             throw new BusinessException("删除插件失败: " + e.getMessage());
@@ -132,7 +127,7 @@ public class StorePluginService {
             if (updates.isEmpty()) {
                 throw new BusinessException("没有需要保存的配置项");
             }
-            ExternalPropertiesFile.upsert(deployPaths.configFile(), updates);
+            runtime.apply(updates, () -> ExternalPropertiesFile.upsert(deployPaths.configFile(), updates));
             return status();
         } catch (BusinessException e) {
             throw e;
@@ -208,7 +203,7 @@ public class StorePluginService {
                         ? request.getStoreBackend()
                         : props.getOrDefault("COLLECT_STORE_BACKEND", "caffeine"));
         if ("redis".equals(backend) && listPluginJars(TYPE_REDIS).isEmpty()
-                && !ClassUtils.isPresent(REDIS_AUTO_CONFIG, getClass().getClassLoader())) {
+                && !runtime.loaded(TYPE_REDIS)) {
             throw new BusinessException("启用 Redis 前请先导入 omes-dgw-plugin-redis 插件 jar");
         }
         updates.put("COLLECT_STORE_BACKEND", backend);
@@ -246,12 +241,12 @@ public class StorePluginService {
     ) {
         boolean enabled = request.getInfluxEnabled() != null
                 ? request.getInfluxEnabled()
-                : parseBoolean(props.get("INFLUX_ENABLED"), false);
+                : "influxdb".equalsIgnoreCase(props.getOrDefault("COLLECT_MONITOR_TYPE", "none"));
         if (enabled && listPluginJars(TYPE_INFLUX).isEmpty()
-                && !ClassUtils.isPresent(INFLUX_AUTO_CONFIG, getClass().getClassLoader())) {
+                && !runtime.loaded(TYPE_INFLUX)) {
             throw new BusinessException("启用 Influx 前请先导入 omes-dgw-plugin-influx 插件 jar");
         }
-        updates.put("INFLUX_ENABLED", String.valueOf(enabled));
+        updates.put("COLLECT_MONITOR_TYPE", enabled ? "influxdb" : "none");
 
         String url = StringUtils.hasText(request.getInfluxUrl())
                 ? request.getInfluxUrl().trim()
@@ -282,32 +277,18 @@ public class StorePluginService {
 
     private StorePluginStatusVo.RedisSection buildRedisSection(Map<String, String> props) {
         List<String> jars = listPluginJarNames(TYPE_REDIS);
-        boolean onCp = ClassUtils.isPresent(REDIS_AUTO_CONFIG, getClass().getClassLoader());
+        boolean onCp = runtime.loaded(TYPE_REDIS);
         boolean jarPresent = !jars.isEmpty();
         String active = normalizeBackend(appProperties.getCollect().getStoreBackend());
         String configured = normalizeBackend(props.getOrDefault("COLLECT_STORE_BACKEND", active));
 
-        boolean restartRequired = (jarPresent && !onCp)
-                || (!configured.equals(active))
-                || ("redis".equals(configured) && !onCp);
-
-        String hint;
-        if ("redis".equals(configured) && !onCp) {
-            hint = jarPresent
-                    ? "已导入 Redis 插件 jar，但当前进程尚未加载。请使用 loader.path=plugins 重启服务后再启用 Redis。"
-                    : "已配置 redis 后端，但未找到插件 jar。请先上传 omes-dgw-plugin-redis-*-plugin.jar。";
-        } else if (jarPresent && !onCp) {
-            hint = "Redis 插件 jar 已在 plugins 目录，重启并加载 plugins 后即可切换到 Redis。";
-        } else if ("redis".equals(active) && onCp) {
-            hint = "Redis 存储插件已生效。";
-        } else {
-            hint = "当前使用本地 Caffeine。可导入 Redis 插件并保存配置后重启生效。";
-        }
+        boolean restartRequired = false;
+        String hint = onCp ? "Redis 插件运行中，可在线更新或停用。" : jarPresent ? "插件已安装，选择 Redis 后保存即可在线启用。" : "当前使用本地 Caffeine，可上传 Redis 插件。";
 
         return StorePluginStatusVo.RedisSection.builder()
                 .activeStoreBackend(active)
                 .configuredStoreBackend(configured)
-                .onClasspath(onCp)
+                .loaded(onCp)
                 .jarPresent(jarPresent)
                 .jarNames(jars)
                 .restartRequired(restartRequired)
@@ -322,27 +303,13 @@ public class StorePluginService {
 
     private StorePluginStatusVo.InfluxSection buildInfluxSection(Map<String, String> props) {
         List<String> jars = listPluginJarNames(TYPE_INFLUX);
-        boolean onCp = ClassUtils.isPresent(INFLUX_AUTO_CONFIG, getClass().getClassLoader());
+        boolean onCp = runtime.loaded(TYPE_INFLUX);
         boolean jarPresent = !jars.isEmpty();
-        boolean activeEnabled = appProperties.getInflux().isEnabled();
-        boolean configuredEnabled = parseBoolean(props.get("INFLUX_ENABLED"), activeEnabled);
+        boolean activeEnabled = "influxdb".equalsIgnoreCase(appProperties.getCollect().getMonitorType());
+        boolean configuredEnabled = "influxdb".equalsIgnoreCase(props.getOrDefault("COLLECT_MONITOR_TYPE", appProperties.getCollect().getMonitorType()));
 
-        boolean restartRequired = (jarPresent && !onCp)
-                || (configuredEnabled != activeEnabled)
-                || (configuredEnabled && !onCp);
-
-        String hint;
-        if (configuredEnabled && !onCp) {
-            hint = jarPresent
-                    ? "已导入 Influx 插件 jar，但当前进程尚未加载。请使用 loader.path=plugins 重启服务后再启用 Influx。"
-                    : "已配置 INFLUX_ENABLED=true，但未找到插件 jar。请先上传 omes-dgw-plugin-influx-*-plugin.jar。";
-        } else if (jarPresent && !onCp) {
-            hint = "Influx 插件 jar 已在 plugins 目录，重启并加载 plugins 后即可启用。";
-        } else if (activeEnabled && onCp) {
-            hint = "Influx 时序插件已生效。";
-        } else {
-            hint = "当前未启用 Influx。可导入插件并保存配置后重启生效。";
-        }
+        boolean restartRequired = false;
+        String hint = onCp ? "Influx 插件运行中，可在线更新或停用。" : jarPresent ? "插件已安装，配置并保存即可在线启用。" : "尚未安装 Influx 插件。";
 
         return StorePluginStatusVo.InfluxSection.builder()
                 .enabled(activeEnabled)
@@ -355,7 +322,7 @@ public class StorePluginService {
                         appProperties.getCollect().getHistory().isEnabled()))
                 .persistMetrics(parseBoolean(props.get("METRICS_PERSIST_INFLUX"),
                         appProperties.getCollect().getMetrics().isPersistToInflux()))
-                .onClasspath(onCp)
+                .loaded(onCp)
                 .jarPresent(jarPresent)
                 .jarNames(jars)
                 .restartRequired(restartRequired)

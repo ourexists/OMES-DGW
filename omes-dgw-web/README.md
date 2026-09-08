@@ -6,6 +6,8 @@ Vue 3 + Vite + ant-design-vue。
 
 ```bash
 npm install
+```
+```bash
 npm run dev
 ```
 

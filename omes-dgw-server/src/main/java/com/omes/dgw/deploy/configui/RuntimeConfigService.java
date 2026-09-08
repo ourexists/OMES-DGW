@@ -19,9 +19,11 @@ import java.util.stream.Collectors;
 public class RuntimeConfigService {
 
     private final DeployPaths deployPaths;
+    private final com.omes.dgw.plugin.StorePluginRuntime plugins;
 
-    public RuntimeConfigService(DeployPaths deployPaths) {
+    public RuntimeConfigService(DeployPaths deployPaths, com.omes.dgw.plugin.StorePluginRuntime plugins) {
         this.deployPaths = deployPaths;
+        this.plugins = plugins;
     }
 
     public List<RuntimeConfigSectionVo> listSections(String group) {
@@ -78,7 +80,11 @@ public class RuntimeConfigService {
             if (updates.isEmpty()) {
                 throw new BusinessException("没有需要保存的配置项");
             }
-            ExternalPropertiesFile.upsert(deployPaths.configFile(), updates);
+            if (id.startsWith("plugin-") || updates.containsKey("COLLECT_STORE_BACKEND")) {
+                plugins.apply(updates, () -> ExternalPropertiesFile.upsert(deployPaths.configFile(), updates));
+            } else {
+                ExternalPropertiesFile.upsert(deployPaths.configFile(), updates);
+            }
             return toVo(def);
         } catch (BusinessException ex) {
             throw ex;

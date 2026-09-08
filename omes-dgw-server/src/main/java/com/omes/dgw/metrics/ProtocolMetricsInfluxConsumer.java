@@ -1,8 +1,6 @@
 package com.omes.dgw.metrics;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -14,23 +12,27 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Slf4j
 @Service
-@ConditionalOnProperty(prefix = "app.collect.metrics", name = "persist-to-influx", havingValue = "true")
-@ConditionalOnBean({ProtocolMetricsInfluxQueueService.class, ProtocolMetricsHistoryWriter.class})
 public class ProtocolMetricsInfluxConsumer implements ProtocolMetricsSampleListener {
 
     private final ProtocolMetricsInfluxQueueService queueService;
     private final ProtocolMetricsHistoryWriter influxWriter;
     private final MetricsInfluxWriteLeader writeLeader;
+    private final com.omes.dgw.plugin.StorePluginRuntime runtime;
+    private final com.omes.dgw.config.AppProperties properties;
     private final AtomicBoolean flushing = new AtomicBoolean(false);
 
     public ProtocolMetricsInfluxConsumer(
             ProtocolMetricsInfluxQueueService queueService,
             ProtocolMetricsHistoryWriter batchWriter,
-            MetricsInfluxWriteLeader writeLeader
+            MetricsInfluxWriteLeader writeLeader,
+            com.omes.dgw.plugin.StorePluginRuntime runtime,
+            com.omes.dgw.config.AppProperties properties
     ) {
         this.queueService = queueService;
         this.influxWriter = batchWriter;
         this.writeLeader = writeLeader;
+        this.runtime = runtime;
+        this.properties = properties;
     }
 
     /**
@@ -38,6 +40,10 @@ public class ProtocolMetricsInfluxConsumer implements ProtocolMetricsSampleListe
      */
     @Override
     public void onSampleCompleted(List<ProtocolMetricsHistoryStore.MetricsPoint> points) {
+        runtime.read(() -> { if (runtime.metricsEnabled()) onSampleActive(points); });
+    }
+
+    private void onSampleActive(List<ProtocolMetricsHistoryStore.MetricsPoint> points) {
         if (points == null || points.isEmpty() || !writeLeader.isLeader()) {
             return;
         }
@@ -47,14 +53,23 @@ public class ProtocolMetricsInfluxConsumer implements ProtocolMetricsSampleListe
         }
     }
 
-    @Scheduled(fixedDelayString = "${app.collect.metrics.influx-flush-interval-sec:60}000")
+    private volatile long lastScheduledFlush;
+
+    @Scheduled(fixedDelay = 1000)
     public void scheduledFlush() {
-        if (writeLeader.isLeader() && queueService.queueSize() > 0) {
+        long now = System.nanoTime();
+        if (now - lastScheduledFlush < java.util.concurrent.TimeUnit.SECONDS.toNanos(Math.max(1, properties.getCollect().getMetrics().getInfluxFlushIntervalSec()))) return;
+        lastScheduledFlush = now;
+        if (runtime.metricsEnabled() && queueService.queueSize() > 0) {
             flushBatch();
         }
     }
 
     public void flushBatch() {
+        runtime.read(() -> { if (runtime.metricsEnabled() && writeLeader.isLeader()) flushActive(); });
+    }
+
+    private void flushActive() {
         if (!flushing.compareAndSet(false, true)) {
             return;
         }
@@ -65,7 +80,12 @@ public class ProtocolMetricsInfluxConsumer implements ProtocolMetricsSampleListe
                 if (batch.isEmpty()) {
                     break;
                 }
-                influxWriter.writeMetrics(batch);
+                try {
+                    influxWriter.writeMetrics(batch);
+                } catch (Exception ex) {
+                    queueService.requeue(batch);
+                    throw ex;
+                }
                 if (batch.size() < queueService.batchSize()) {
                     break;
                 }

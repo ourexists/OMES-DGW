@@ -3,13 +3,18 @@
     <div class="page-hero">
       <div class="page-hero__text">
         <h2>系统配置</h2>
-        <p>通用运行参数与扩展插件统一在此管理：先选能力，再上传插件并在二级窗口配置连接。</p>
+        <p>管理运行参数与扩展插件。</p>
       </div>
-      <a-button :loading="loading" @click="refreshAll">
+      <a-space>
+      <a-button :loading="loading" :disabled="restarting" @click="refreshAll">
         <ReloadOutlined />
         刷新
       </a-button>
+      <a-button danger :loading="restarting" @click="confirmRestart">系统重启</a-button>
+      </a-space>
     </div>
+
+    <a-alert v-if="restartNotice" :type="restartFailed ? 'error' : 'info'" show-icon :message="restartNotice" style="margin-bottom: 16px" />
 
     <div class="settings-main">
       <div v-if="loading" class="settings-loading">
@@ -40,7 +45,6 @@
           <div class="settings-panel__head">
             <div>
               <h3>{{ currentNav?.title }}</h3>
-              <p>{{ currentNav?.description || currentNav?.shortDesc }}</p>
             </div>
             <a-tag v-if="currentNav?.fieldCount" color="blue">{{ currentNav.fieldCount }} 项</a-tag>
             <a-tag v-else color="purple">插件</a-tag>
@@ -48,28 +52,48 @@
 
           <div class="settings-panel__body">
             <template v-if="activeTab === 'cache-flush'">
-              <div class="panel-block">
-                <h4 class="panel-block__title">通用开关</h4>
                 <ConfigSectionForm
                   :key="'cache-flush'"
                   ref="formRef"
                   section-id="cache-flush"
                   compact
                   hide-description
-                />
-              </div>
-              <div class="panel-block">
-                <h4 class="panel-block__title">Redis 插件</h4>
-                <StorePluginPanel ref="redisPluginRef" :types="['redis']" />
-              </div>
+                  @saved="redisPluginRef?.reload?.()"
+                >
+                  <template #field="{ field, values }">
+                    <PluginChoiceCards v-model="values[field.key]" :label="field.label" :options="cacheChoices(field)" />
+                  </template>
+                  <template #before-footer="{ values }">
+                    <div v-if="cachePluginType(values.COLLECT_STORE_BACKEND)" class="backend-details">
+                      <StorePluginPanel v-if="cachePluginType(values.COLLECT_STORE_BACKEND)" ref="redisPluginRef" :types="[cachePluginType(values.COLLECT_STORE_BACKEND)]" />
+                    </div>
+                  </template>
+                </ConfigSectionForm>
             </template>
 
             <template v-else-if="activeTab === 'monitor-collect'">
-              <div class="panel-block">
-                <h4 class="panel-block__title">InfluxDB 插件</h4>
-                <p class="panel-block__hint">连接管理与历史/指标落库均在插件「配置」二级窗口中设置。</p>
-                <StorePluginPanel ref="influxPluginRef" :types="['influx']" />
-              </div>
+              <ConfigSectionForm
+                ref="formRef"
+                section-id="plugin-influx"
+                :visible-keys="['COLLECT_MONITOR_TYPE']"
+                compact
+                hide-description
+                @saved="monitorPluginRef?.reload?.()"
+              >
+                <template #field="{ values }">
+                  <PluginChoiceCards
+                    :model-value="values.COLLECT_MONITOR_TYPE"
+                    label="采集监控类型"
+                    :options="pluginChoices['monitor-collect']"
+                    @update:model-value="values.COLLECT_MONITOR_TYPE = $event"
+                  />
+                </template>
+                <template #before-footer="{ values }">
+                  <div v-if="monitorEnabled(values)" class="backend-details">
+                    <StorePluginPanel v-if="monitorEnabled(values)" ref="monitorPluginRef" :types="['influx']" @config-saved="formRef?.reload?.()" />
+                  </div>
+                </template>
+              </ConfigSectionForm>
             </template>
 
             <ConfigSectionForm
@@ -89,7 +113,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { message, Modal } from 'ant-design-vue'
 import {
   CloudServerOutlined,
   ControlOutlined,
@@ -99,16 +124,96 @@ import {
   ReloadOutlined,
   ThunderboltOutlined
 } from '@ant-design/icons-vue'
-import { listRuntimeConfigSections } from '@/api/system'
+import { listRuntimeConfigSections, restartSystem, getSystemRestartStatus } from '@/api/system'
 import ConfigSectionForm from './components/ConfigSectionForm.vue'
 import StorePluginPanel from './components/StorePluginPanel.vue'
+import PluginChoiceCards from './components/PluginChoiceCards.vue'
+import { pluginChoices } from './pluginChoices'
 
 const loading = ref(false)
+const restarting = ref(false)
+const restartNotice = ref('')
+const restartFailed = ref(false)
+let restartTimer
+let disposed = false
+
+const waitForRestart = (previousId, deadline) => {
+  restartTimer = window.setTimeout(async () => {
+    if (disposed) return
+    try {
+      const { data } = await getSystemRestartStatus()
+      if (disposed) return
+      if (data.failure) {
+        restarting.value = false
+        restartFailed.value = true
+        restartNotice.value = data.failure
+        return
+      }
+      if (data.instanceId !== previousId && !data.restarting) {
+        restarting.value = false
+        restartNotice.value = ''
+        message.success('系统重启完成，已重新加载配置')
+        await refreshAll()
+        return
+      }
+    } catch (error) {
+      // Connection failures are expected while the application is restarting.
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        restarting.value = false
+        restartFailed.value = true
+        restartNotice.value = '无法验证重启状态，请重新登录后检查服务。'
+        return
+      }
+    }
+    if (disposed) return
+    if (Date.now() >= deadline) {
+      restarting.value = false
+      restartFailed.value = true
+      restartNotice.value = '尚未检测到重启完成，请检查服务日志；若修改了访问地址或端口，请使用新地址访问。'
+      return
+    }
+    waitForRestart(previousId, deadline)
+  }, 2000)
+}
+
+const confirmRestart = () => {
+  Modal.confirm({
+    title: '确认重启系统？',
+    content: '请先保存配置。重启将退出当前 Java 进程并重新启动，加载启动配置。期间采集与页面访问会暂时中断，未保存修改不会生效。',
+    okText: '确认重启',
+    cancelText: '取消',
+    okType: 'danger',
+    onOk: async () => {
+      restarting.value = true
+      restartFailed.value = false
+      try {
+        const { data } = await restartSystem()
+        restartNotice.value = '正在重启系统并重新加载配置，请稍候…'
+        waitForRestart(data.instanceId, Date.now() + 120000)
+      } catch (error) {
+        restarting.value = false
+        restartFailed.value = true
+        restartNotice.value = '未能确认重启请求，请检查服务状态后再操作。'
+        throw error
+      }
+    }
+  })
+}
+
+onUnmounted(() => {
+  disposed = true
+  window.clearTimeout(restartTimer)
+})
 const sections = ref([])
 const activeTab = ref('')
 const formRef = ref(null)
 const redisPluginRef = ref(null)
-const influxPluginRef = ref(null)
+const monitorPluginRef = ref(null)
+const monitorEnabled = values => values.COLLECT_MONITOR_TYPE === 'influxdb'
+const cacheChoices = field => (field.options || []).map(value =>
+  pluginChoices['cache-flush'].find(option => option.value === value) || { value, label: value, description: '' }
+)
+const cachePluginType = value => pluginChoices['cache-flush'].find(option => option.value === value)?.pluginType
 
 const metaMap = {
   'data-store': {
@@ -121,15 +226,16 @@ const metaMap = {
     icon: ThunderboltOutlined,
     iconBg: 'rgba(220, 38, 38, 0.1)',
     iconColor: '#dc2626',
-    shortDesc: '后端开关 + Redis 插件'
+    shortDesc: '存储后端与插件管理',
+    description: '选择实时缓存后端，安装和配置对应插件，保存后在线生效。采集队列由主服务持有。'
   },
   'monitor-collect': {
     icon: CloudServerOutlined,
     iconBg: 'rgba(22, 119, 255, 0.1)',
     iconColor: '#1677ff',
-    shortDesc: '监控采集 Influx 插件',
+    shortDesc: '采集存储与插件管理',
     title: '监控采集',
-    description: '上传 Influx 插件后配置连接与落库参数',
+    description: '选择监控采集插件，管理安装、连接与落库配置。',
     synthetic: true
   },
   'collect-runtime': {
@@ -207,7 +313,7 @@ const refreshAll = async () => {
   await loadSections()
   formRef.value?.reload?.()
   redisPluginRef.value?.reload?.()
-  influxPluginRef.value?.reload?.()
+  monitorPluginRef.value?.reload?.()
 }
 
 onMounted(loadSections)
@@ -396,6 +502,11 @@ onMounted(loadSections)
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--omes-fluent-divider, rgba(0, 0, 0, 0.06));
+}
+
+
+.backend-details {
+  margin-bottom: 16px;
 }
 
 .panel-block__title {

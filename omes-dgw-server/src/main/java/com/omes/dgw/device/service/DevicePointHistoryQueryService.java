@@ -13,10 +13,10 @@ import com.omes.dgw.device.mapper.DeviceMapper;
 import com.omes.dgw.device.model.DeviceCollectConfig;
 import com.omes.dgw.device.model.DevicePointConfigItem;
 import com.omes.dgw.device.support.DevicePointConfigSupport;
-import com.omes.dgw.influx.DeviceSnapshotHistoryQuery;
-import com.omes.dgw.influx.DeviceSnapshotHistoryQuery.SnapshotPoint;
-import com.omes.dgw.influx.SnapshotChartAggregateResolver;
-import com.omes.dgw.influx.SnapshotChartAggregateResolver.ResolveResult;
+import com.omes.dgw.timeseries.DeviceSnapshotHistoryQuery;
+import com.omes.dgw.timeseries.DeviceSnapshotHistoryQuery.SnapshotPoint;
+import com.omes.dgw.timeseries.SnapshotChartAggregateResolver;
+import com.omes.dgw.timeseries.SnapshotChartAggregateResolver.ResolveResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
@@ -266,8 +266,8 @@ public class DevicePointHistoryQueryService {
     }
 
     private void assertHistoryQueryEnabled() {
-        if (!appProperties.getInflux().isEnabled()) {
-            throw new BusinessException("未启用 InfluxDB（app.influx.enabled）");
+        if (!"influxdb".equalsIgnoreCase(appProperties.getCollect().getMonitorType())) {
+            throw new BusinessException("未启用 InfluxDB（app.collect.monitor-type）");
         }
         if (!appProperties.getCollect().getHistory().isEnabled()) {
             throw new BusinessException("未启用快照历史入库（app.collect.history.enabled）");

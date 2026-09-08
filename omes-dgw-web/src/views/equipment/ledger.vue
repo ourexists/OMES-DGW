@@ -29,6 +29,49 @@
       />
     </div>
 
+    <div class="ledger-workspace">
+      <a-card class="group-card" size="small" title="设备分组">
+        <template #extra>
+          <a-button type="text" size="small" aria-label="新增设备分组" title="新增分组" @click="handleEditGroup()"><PlusOutlined /></a-button>
+          <a-button type="text" size="small" :loading="categoryLoading" aria-label="刷新设备分组" @click="loadCategoryOptions(true)">
+            <ReloadOutlined />
+          </a-button>
+        </template>
+        <a-input v-model:value="groupKeyword" allow-clear placeholder="搜索分组名称或编码" aria-label="搜索设备分组">
+          <template #prefix><SearchOutlined /></template>
+        </a-input>
+        <a-spin :spinning="categoryLoading" class="group-list-loading">
+          <nav class="group-list" aria-label="设备分组">
+            <button type="button" class="group-item" :class="{ active: !searchForm.categoryCode }" :aria-pressed="!searchForm.categoryCode" @click="handleSelectGroup(undefined)">
+              <AppstoreOutlined /><span>全部设备</span>
+            </button>
+            <div v-for="group in filteredGroups" :key="group.value" class="group-row">
+            <button
+              type="button"
+              class="group-item"
+              :class="{ active: searchForm.categoryCode === group.value }"
+              :aria-pressed="searchForm.categoryCode === group.value"
+              :title="`${group.label}（${group.value}）`"
+              @click="handleSelectGroup(group.value)"
+            >
+              <FolderOutlined />
+              <span class="group-label">{{ group.label }}<small>{{ group.value }}</small></span>
+            </button>
+              <a-dropdown :trigger="['click']">
+                <a-button type="text" size="small" :aria-label="`管理分组${group.label}`" title="管理分组"><MoreOutlined /></a-button>
+                <template #overlay>
+                  <a-menu>
+                    <a-menu-item key="edit" @click="handleEditGroup(group)">编辑分组</a-menu-item>
+                    <a-menu-item key="delete" danger @click="handleDeleteGroup(group)">删除分组</a-menu-item>
+                  </a-menu>
+                </template>
+              </a-dropdown>
+            </div>
+            <a-empty v-if="!categoryLoading && !filteredGroups.length" :image="Empty.PRESENTED_IMAGE_SIMPLE" :description="groupKeyword.trim() ? '未找到匹配分组' : '暂无设备分组'" />
+          </nav>
+        </a-spin>
+      </a-card>
+      <div class="ledger-main">
     <a-card class="filter-card" size="small" style="margin-bottom: 16px">
       <a-form layout="inline" :model="searchForm" @finish="handleSearch">
         <a-form-item name="name" label="设备名称">
@@ -45,18 +88,6 @@
             allow-clear
             show-search
             placeholder="请选择协议类型"
-            option-filter-prop="label"
-            style="width: 150px"
-          />
-        </a-form-item>
-        <a-form-item name="categoryCode" label="所属分组">
-          <a-select
-            v-model:value="searchForm.categoryCode"
-            :options="categoryOptions"
-            :loading="categoryLoading"
-            allow-clear
-            show-search
-            placeholder="请选择所属分组"
             option-filter-prop="label"
             style="width: 150px"
           />
@@ -111,6 +142,16 @@
         </template>
       </a-table>
     </a-card>
+
+      </div>
+    </div>
+
+    <a-modal v-model:open="groupModalVisible" :title="groupForm.id ? '编辑分组' : '新增分组'" :confirm-loading="groupSaving" :closable="!groupSaving" :cancel-button-props="{ disabled: groupSaving }" :mask-closable="false" :keyboard="!groupSaving" ok-text="保存" cancel-text="取消" @ok="handleSaveGroup">
+      <a-form layout="vertical">
+        <a-form-item label="分组名称" required><a-input v-model:value="groupForm.name" :maxlength="200" placeholder="请输入分组名称" :disabled="groupSaving" /></a-form-item>
+        <a-form-item label="分组编码" required :extra="groupForm.id ? '分组下存在设备时不可修改编码，可修改分组名称。' : '编码需唯一，用于关联设备。'"><a-input v-model:value="groupForm.code" :maxlength="64" placeholder="请输入分组编码" :disabled="groupSaving" /></a-form-item>
+      </a-form>
+    </a-modal>
 
     <a-modal
       v-model:open="showAddModal"
@@ -277,10 +318,13 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { message, Modal } from 'ant-design-vue'
-import { DownloadOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons-vue'
+import { message, Modal, Empty } from 'ant-design-vue'
+import { AppstoreOutlined, DownloadOutlined, FolderOutlined, MoreOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import {
   copyDevice,
+  createDeviceCategory,
+  updateDeviceCategory,
+  deleteDeviceCategory,
   createDevice,
   deleteDevice,
   downloadDeviceImportTemplate,
@@ -358,6 +402,68 @@ const selectedRowKeys = ref([])
 const batchOperating = ref(false)
 const categoryOptions = ref([])
 const categoryLoading = ref(false)
+const groupKeyword = ref('')
+const groupModalVisible = ref(false)
+const groupSaving = ref(false)
+const groupForm = reactive({ id: null, name: '', code: '' })
+let originalGroupCode
+
+const handleEditGroup = group => {
+  Object.assign(groupForm, { id: group?.id ?? null, name: group?.label ?? '', code: group?.value ?? '' })
+  originalGroupCode = group?.value
+  groupModalVisible.value = true
+}
+
+const handleSaveGroup = async () => {
+  if (groupSaving.value) return
+  const payload = { ...groupForm, name: groupForm.name.trim(), code: groupForm.code.trim() }
+  if (!payload.name || !payload.code) return message.warning('请填写分组名称和编码')
+  if (categoryOptions.value.some(group => group.value === payload.code && group.id !== payload.id)) {
+    return message.warning('分组编码已存在')
+  }
+  groupSaving.value = true
+  try {
+    if (payload.id) await updateDeviceCategory(payload)
+    else await createDeviceCategory(payload)
+    if (searchForm.categoryCode === originalGroupCode && originalGroupCode !== undefined) {
+      searchForm.categoryCode = payload.code
+    }
+    groupModalVisible.value = false
+    groupKeyword.value = ''
+    message.success(payload.id ? '分组修改成功' : '分组创建成功')
+    await loadCategoryOptions(true)
+    await loadDevicePage()
+  } catch (error) {
+    // 请求拦截器会统一提示错误，保留表单便于修改。
+  } finally {
+    groupSaving.value = false
+  }
+}
+
+const handleDeleteGroup = group => {
+  Modal.confirm({
+    title: '删除分组',
+    content: `确定删除分组「${group.label}」吗？分组下存在设备时不能删除，请先调整设备所属分组。`,
+    okText: '删除',
+    okType: 'danger',
+    cancelText: '取消',
+    onOk: async () => {
+      await deleteDeviceCategory(group.id)
+      if (searchForm.categoryCode === group.value) {
+        searchForm.categoryCode = undefined
+        selectedRowKeys.value = []
+        pagination.current = 1
+      }
+      message.success('分组删除成功')
+      await loadCategoryOptions(true)
+      await loadDevicePage()
+    }
+  })
+}
+const filteredGroups = computed(() => {
+  const keyword = groupKeyword.value.trim().toLowerCase()
+  return categoryOptions.value.filter(group => `${group.label} ${group.value}`.toLowerCase().includes(keyword))
+})
 const protocolOptions = ref([])
 const protocolLoading = ref(false)
 
@@ -541,14 +647,17 @@ const normalizeOptions = (list, getLabel, getValue) => list
   })
   .filter(Boolean)
 
-const loadCategoryOptions = async () => {
+const loadCategoryOptions = async (refresh = false) => {
     categoryLoading.value = true
 
   try {
-    const response = await getDeviceCategoriesAll()
-    categoryOptions.value = normalizeOptions(getResponseData(response), getCategoryName, getCategoryValue)
+    const response = await getDeviceCategoriesAll(refresh)
+    categoryOptions.value = getResponseData(response).map(item => ({ id: item.id, label: getCategoryName(item), value: getCategoryValue(item) }))
+    if (searchForm.categoryCode && !categoryOptions.value.some(group => group.value === searchForm.categoryCode)) {
+      handleSelectGroup(undefined)
+    }
   } catch (error) {
-    categoryOptions.value = []
+    // 保留已加载的分组，请求拦截器会统一提示错误。
   } finally {
     categoryLoading.value = false
   }
@@ -654,18 +763,22 @@ const downloadBlob = (blob, filename) => {
   URL.revokeObjectURL(url)
 }
 
+let devicePageRequestId = 0
 const loadDevicePage = async () => {
+  const requestId = ++devicePageRequestId
   tableLoading.value = true
 
   try {
     const response = await getDevicePage(buildPagePayload())
+    if (requestId !== devicePageRequestId) return
     tableData.value = getResponseData(response).records
     pagination.total = getResponseTotal(response)
   } catch (error) {
+    if (requestId !== devicePageRequestId) return
     tableData.value = []
     pagination.total = 0
   } finally {
-    tableLoading.value = false
+    if (requestId === devicePageRequestId) tableLoading.value = false
   }
 }
 
@@ -674,6 +787,7 @@ const handleAddDevice = () => {
   copyMode.value = false
   copySourceDeviceId.value = null
   Object.assign(formData, createEmptyDeviceForm())
+  formData.categoryCode = searchForm.categoryCode
   setFirstOptionIfEmpty(formData, 'protocol', protocolOptions.value)
   showAddModal.value = true
 }
@@ -740,11 +854,18 @@ const handleDownloadTemplate = async () => {
 }
 
 const handleSearch = () => {
+  selectedRowKeys.value = []
   pagination.current = 1
   loadDevicePage()
 }
 
+const handleSelectGroup = categoryCode => {
+  searchForm.categoryCode = categoryCode
+  handleSearch()
+}
+
 const handleReset = () => {
+  groupKeyword.value = ''
   searchForm.name = ''
   searchForm.code = ''
   searchForm.protocol = undefined
@@ -1062,6 +1183,79 @@ onMounted(() => {
 .ledger-list-page .page-header,
 .ledger-list-page .filter-card {
   flex-shrink: 0;
+}
+
+.ledger-workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 16px;
+}
+
+.ledger-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.group-card {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.group-card :deep(.ant-card-body) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 12px;
+}
+
+.group-list-loading {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.group-list { display: flex; flex-direction: column; gap: 4px; }
+.group-row { display: flex; align-items: center; }
+.group-row .group-item { flex: 1; min-width: 0; }
+.group-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #595959;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.group-item:hover { background: #f5f5f5; }
+.group-item.active { background: #e6f4ff; color: #1677ff; }
+.group-item:focus-visible { outline: 2px solid #1677ff; outline-offset: -2px; }
+.group-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.group-label small { display: block; color: #8c8c8c; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.filter-card :deep(.ant-form) { row-gap: 12px; }
+.filter-card :deep(.ant-space) { flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  .group-card { width: 190px; }
+  .ledger-workspace { gap: 10px; }
+}
+
+@media (max-width: 600px) {
+  .ledger-workspace { flex-direction: column; }
+  .group-card { width: 100%; max-height: 220px; }
+  .page-header { flex-wrap: wrap; gap: 12px; }
+  .page-header :deep(.ant-space) { flex-wrap: wrap; }
 }
 
 .list-card {

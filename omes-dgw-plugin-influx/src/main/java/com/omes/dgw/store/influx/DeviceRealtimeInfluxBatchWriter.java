@@ -7,7 +7,7 @@ import com.omes.dgw.device.cache.DevicePointRealtimeObj;
 import com.omes.dgw.device.cache.DeviceRealtimeObj;
 import com.omes.dgw.device.cache.PointValueScaler;
 import com.omes.dgw.device.enums.DeviceProtocol;
-import com.omes.dgw.influx.DeviceRealtimeHistoryWriter;
+import com.omes.dgw.timeseries.DeviceRealtimeHistoryWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@ConditionalOnProperty(prefix = "app.influx", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "app.collect", name = "monitor-type", havingValue = "influxdb")
 @ConditionalOnBean(InfluxDBClient.class)
 public class DeviceRealtimeInfluxBatchWriter implements DeviceRealtimeHistoryWriter {
 

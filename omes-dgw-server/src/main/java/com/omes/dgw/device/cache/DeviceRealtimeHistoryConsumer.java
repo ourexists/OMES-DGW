@@ -1,11 +1,9 @@
 package com.omes.dgw.device.cache;
 
 import com.omes.dgw.config.AppProperties;
-import com.omes.dgw.influx.DeviceRealtimeHistoryWriter;
-import com.omes.dgw.influx.InfluxRuntime;
+import com.omes.dgw.timeseries.DeviceRealtimeHistoryWriter;
+import com.omes.dgw.timeseries.InfluxRuntime;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -20,14 +18,13 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@ConditionalOnProperty(prefix = "app.collect.history", name = "enabled", havingValue = "true")
-@ConditionalOnBean({DeviceRealtimeHistoryQueueService.class, DeviceRealtimeHistoryWriter.class})
 public class DeviceRealtimeHistoryConsumer {
 
     private final DeviceRealtimeHistoryQueueService queueService;
     private final DeviceRealtimeHistoryWriter influxWriter;
     private final InfluxRuntime influx;
-    private final int maxWriteRetries;
+    private final AppProperties properties;
+    private final com.omes.dgw.plugin.StorePluginRuntime runtime;
     private final AtomicBoolean flushing = new AtomicBoolean(false);
     private final AtomicBoolean influxWritePaused = new AtomicBoolean(false);
 
@@ -35,32 +32,49 @@ public class DeviceRealtimeHistoryConsumer {
             DeviceRealtimeHistoryQueueService queueService,
             DeviceRealtimeHistoryWriter influxWriter,
             InfluxRuntime influx,
-            AppProperties appProperties
+            AppProperties appProperties,
+            com.omes.dgw.plugin.StorePluginRuntime runtime
     ) {
         this.queueService = queueService;
         this.influxWriter = influxWriter;
         this.influx = influx;
-        this.maxWriteRetries = Math.max(0, appProperties.getCollect().getHistory().getMaxWriteRetries());
+        this.properties = appProperties;
+        this.runtime = runtime;
     }
 
     /**
      * 新实时快照写入本地缓存后同步入队（复用已序列化的 JSON）。
      */
     public void onSnapshotSaved(DeviceRealtimeObj snapshot, String snapshotJson) {
+        runtime.read(() -> {
+            if (runtime.historyEnabled()) onSnapshotSavedActive(snapshot, snapshotJson);
+        });
+    }
+
+    private void onSnapshotSavedActive(DeviceRealtimeObj snapshot, String snapshotJson) {
         queueService.enqueueJson(snapshotJson);
         if (queueService.reachedBatchThreshold() || queueService.exceedsMaxQueue()) {
             flushBatch();
         }
     }
 
-    @Scheduled(fixedDelayString = "${app.collect.history.flush-interval-sec:60}000")
+    private volatile long lastScheduledFlush;
+
+    @Scheduled(fixedDelay = 1000)
     public void scheduledFlush() {
+        long now = System.nanoTime();
+        if (now - lastScheduledFlush < java.util.concurrent.TimeUnit.SECONDS.toNanos(Math.max(1, properties.getCollect().getHistory().getFlushIntervalSec()))) return;
+        lastScheduledFlush = now;
         if (queueService.queueSize() > 0) {
             flushBatch();
         }
     }
 
     public void flushBatch() {
+        runtime.read(() -> { if (runtime.historyEnabled()) flushActive(); });
+    }
+
+    private void flushActive() {
         if (!flushing.compareAndSet(false, true)) {
             return;
         }
@@ -105,7 +119,7 @@ public class DeviceRealtimeHistoryConsumer {
             int nextRetry = envelope.getRetryCount() + 1;
             envelope.setRetryCount(nextRetry);
             String deviceId = envelope.getSnapshot().getDeviceId();
-            if (nextRetry > maxWriteRetries) {
+            if (nextRetry > Math.max(0, properties.getCollect().getHistory().getMaxWriteRetries())) {
                 discarded++;
                 log.warn("实时历史写入放弃（超过最大重试） deviceId={} retryCount={}", deviceId, nextRetry);
             } else {

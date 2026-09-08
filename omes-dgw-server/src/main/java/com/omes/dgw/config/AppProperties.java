@@ -17,6 +17,8 @@ public class AppProperties {
 
     @Data
     public static class Collect {
+        /** 采集监控类型：none（无）或 influxdb。 */
+        private String monitorType = "none";
         /**
          * 实时缓存与有界队列统一后端：{@code caffeine}（本地，默认）或 {@code redis}
          * （需将 omes-dgw-plugin-redis 插件 jar 加入 classpath）。
@@ -176,7 +178,7 @@ public class AppProperties {
 
     @Data
     public static class History {
-        /** 是否将新实时快照同步入队并批量写入 Influx（需 app.influx.enabled=true） */
+        /** 是否将新实时快照同步入队并批量写入 Influx（需 app.collect.monitor-type=influxdb） */
         private boolean enabled = false;
         /** 触发批量写入的队列长度阈值 */
         private int batchSize = 200;
@@ -198,7 +200,7 @@ public class AppProperties {
         private int sampleIntervalSec = 10;
         /** 内存环形缓冲保留时长（分钟），仅影响未走 Influx 时的本地缓存，不限制 chart 的 minutes 查询参数 */
         private int historyMinutes = 60;
-        /** 是否将采样指标同步入队并批量写入 Influx（需 app.influx.enabled=true） */
+        /** 是否将采样指标同步入队并批量写入 Influx（需 app.collect.monitor-type=influxdb） */
         private boolean persistToInflux = false;
         /** 触发批量写入 Influx 的队列条数阈值 */
         private int influxBatchSize = 500;
@@ -218,11 +220,6 @@ public class AppProperties {
 
     @Data
     public static class Influx {
-        /**
-         * 是否启用 Influx 时序能力。为 true 时必须将 {@code omes-dgw-plugin-influx}
-         * 插件 jar 加入 classpath（如 {@code -Dloader.path=plugins}），否则启动 fail-fast。
-         */
-        private boolean enabled = false;
         /** InfluxDB HTTP API 地址，如 http://localhost:8086 */
         private String url = "http://localhost:8086";
         private String token = "";

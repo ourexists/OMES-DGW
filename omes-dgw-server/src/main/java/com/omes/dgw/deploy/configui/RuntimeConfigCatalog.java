@@ -208,7 +208,7 @@ public final class RuntimeConfigCatalog {
                                 .withGroup("连接管理"),
                         integer("REDIS_DATABASE", "Database", "0", null)
                                 .withGroup("连接管理"),
-                        string("COLLECT_REDIS_KEY_PREFIX", "键前缀", "collect:device:realtime", "实时缓存与刷写队列共用前缀")
+                        string("COLLECT_REDIS_KEY_PREFIX", "键前缀", "collect:device:realtime", "实时缓存键前缀；待写队列由主服务持有")
                                 .withGroup("键空间")
                 )
         );
@@ -223,7 +223,8 @@ public final class RuntimeConfigCatalog {
                 "plugin-influx",
                 concat(
                         List.of(
-                                bool("INFLUX_ENABLED", "启用 InfluxDB", "false", "无插件时请保持关闭")
+                                select("COLLECT_MONITOR_TYPE", "采集监控类型", "none",
+                                        List.of("none", "influxdb"), "默认无；选择 Influxdb 需安装插件")
                                         .withGroup("连接管理"),
                                 string("INFLUX_URL", "Influx URL", "http://localhost:8086", null)
                                         .withGroup("连接管理"),

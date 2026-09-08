@@ -1,4 +1,4 @@
-package com.omes.dgw.influx;
+package com.omes.dgw.timeseries;
 
 /**
  * Influx 运行时能力 SPI：由 {@code omes-dgw-plugin-influx} 提供实现。

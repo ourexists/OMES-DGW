@@ -62,7 +62,7 @@ public class MonitoringSnapshotService {
         AppProperties.OnlineEvent onlineCfg = appProperties.getCollect().getOnlineEvent();
 
         MonitoringPipelineVo pipeline = new MonitoringPipelineVo();
-        pipeline.setInfluxEnabled(appProperties.getInflux().isEnabled());
+        pipeline.setInfluxEnabled("influxdb".equalsIgnoreCase(appProperties.getCollect().getMonitorType()));
         pipeline.setInfluxMetricsPersistEnabled(metricsCfg.isPersistToInflux());
         boolean redisBackend = "redis".equalsIgnoreCase(
                 appProperties.getCollect().getStoreBackend());

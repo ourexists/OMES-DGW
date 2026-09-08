@@ -45,11 +45,12 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       SERVER_PORT: "12010"
+      APP_DEPLOY_RESTART_SUPERVISED: "true"
       LOG_PATH: /app/logs
       CORS_ALLOWED_ORIGIN_PATTERNS: ${CORS_ALLOWED_ORIGIN_PATTERNS:-http://localhost:*,http://127.0.0.1:*}
       SQLITE_PATH: ${SQLITE_PATH:-/app/data/omes-dgw.db}
       FLYWAY_ENABLED: ${FLYWAY_ENABLED:-true}
-      INFLUX_ENABLED: ${INFLUX_ENABLED:-true}
+      COLLECT_MONITOR_TYPE: ${COLLECT_MONITOR_TYPE:-none}
       INFLUX_URL: ${INFLUX_URL:-http://host.docker.internal:8086}
       INFLUX_TOKEN: ${INFLUX_ADMIN_TOKEN:-collect-dev-influx-token-change-me}
       INFLUX_ORG: ${INFLUX_ORG:-omes}

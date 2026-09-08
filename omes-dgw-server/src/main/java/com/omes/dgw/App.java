@@ -18,6 +18,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class App {
 
     public static void main(String[] args) {
+        com.omes.dgw.deploy.RestartProcess.awaitPreviousProcess();
         SpringApplication.run(App.class, args);
     }
 }

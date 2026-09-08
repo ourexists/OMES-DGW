@@ -7,11 +7,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Import;
 
 /**
- * Influx 时序插件自动配置：仅当 classpath 存在 Influx 客户端且 app.influx.enabled=true 时生效。
+ * Influx 时序插件自动配置：仅当 classpath 存在 Influx 客户端且 app.collect.monitor-type=influxdb 时生效。
  */
 @AutoConfiguration
 @ConditionalOnClass(InfluxDBClient.class)
-@ConditionalOnProperty(prefix = "app.influx", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "app.collect", name = "monitor-type", havingValue = "influxdb")
 @Import({
         InfluxConfig.class,
         InfluxConnectionService.class,

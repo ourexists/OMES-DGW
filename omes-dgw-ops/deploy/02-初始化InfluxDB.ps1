@@ -295,7 +295,7 @@ $credFile = Join-Path $InfluxDir "influx-app-credentials.env"
     "INFLUX_ADMIN_TOKEN=$appToken"
     "INFLUX_ORG=$orgName"
     "INFLUX_BUCKET=$bucketName"
-    "INFLUX_ENABLED=true"
+    "COLLECT_MONITOR_TYPE=influxdb"
 ) | Set-Content -LiteralPath $credFile -Encoding UTF8
 
 Write-Host ""

@@ -1,36 +1,21 @@
 package com.omes.dgw.config;
-
 import com.omes.dgw.device.cache.DeviceRealtimeCacheStore;
-import com.omes.dgw.device.cache.caffeine.CaffeineDeviceRealtimeCacheStore;
-import com.omes.dgw.queue.BoundedListQueueOps;
-import com.omes.dgw.queue.BoundedLocalListQueueOps;
-import com.omes.dgw.queue.CollectQueueMetrics;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import com.omes.dgw.timeseries.*;
+import com.omes.dgw.metrics.*;
+import com.omes.dgw.plugin.StorePluginRuntime;
+import com.omes.dgw.queue.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-/**
- * caffeine / 本地队列后端装配（默认）。
- */
-@Slf4j
 @Configuration
-@ConditionalOnProperty(
-        prefix = "app.collect",
-        name = "store-backend",
-        havingValue = "caffeine",
-        matchIfMissing = true
-)
 public class StoreBackendConfiguration {
-
-    @Bean
-    public DeviceRealtimeCacheStore deviceRealtimeCacheStore() {
-        return new CaffeineDeviceRealtimeCacheStore();
-    }
-
-    @Bean
-    public BoundedListQueueOps boundedListQueueOps(CollectQueueMetrics queueMetrics) {
-        log.info("采集有界队列后端：本地进程内队列");
-        return new BoundedLocalListQueueOps(queueMetrics);
+    @Bean public DeviceRealtimeCacheStore deviceRealtimeCacheStore(StorePluginRuntime runtime) { return runtime.proxy("redis", DeviceRealtimeCacheStore.class); }
+    @Bean public BoundedListQueueOps boundedListQueueOps(CollectQueueMetrics metrics) { return new BoundedLocalListQueueOps(metrics); }
+    @Bean public InfluxRuntime influxRuntime(StorePluginRuntime runtime) { return runtime.proxy("influx", InfluxRuntime.class); }
+    @Bean public DeviceRealtimeHistoryWriter historyWriter(StorePluginRuntime runtime) { return runtime.proxy("influx", DeviceRealtimeHistoryWriter.class); }
+    @Bean public DeviceSnapshotHistoryQuery historyQuery(StorePluginRuntime runtime) { return runtime.proxy("influx", DeviceSnapshotHistoryQuery.class); }
+    @Bean public ProtocolMetricsHistoryWriter metricsWriter(StorePluginRuntime runtime) { return runtime.proxy("influx", ProtocolMetricsHistoryWriter.class); }
+    @Bean public ProtocolMetricsHistoryQuery metricsQuery(StorePluginRuntime runtime) { return runtime.proxy("influx", ProtocolMetricsHistoryQuery.class); }
+    @Bean public MetricsInfluxWriteLeader metricsLeader(StorePluginRuntime runtime, MetricsInstanceIdProvider provider) {
+        return new MetricsInfluxWriteLeader(provider) { @Override public boolean isLeader() { return runtime.isMetricsLeader(); } };
     }
 }

@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 @ConditionalOnExpression("'${app.collect.metrics.persist-to-influx:false}' == 'true'")
 public class RedisMetricsInfluxWriteLeader extends MetricsInfluxWriteLeader {
 
-    private static final String LOCK_KEY = "collect:metrics:influx-write-leader";
+    private static final String LOCK_KEY = "omes:dgw:metrics:influx-write-leader";
     private static final Duration LOCK_TTL = Duration.ofSeconds(45);
 
     private final StringRedisTemplate redisTemplate;

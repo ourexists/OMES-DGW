@@ -15,7 +15,7 @@ import org.springframework.util.StringUtils;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
-@ConditionalOnProperty(prefix = "app.influx", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "app.collect", name = "monitor-type", havingValue = "influxdb")
 public class InfluxConfig {
 
     @Bean(destroyMethod = "close")

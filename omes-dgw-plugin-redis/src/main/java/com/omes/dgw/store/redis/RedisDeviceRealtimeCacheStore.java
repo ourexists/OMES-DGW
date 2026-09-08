@@ -45,7 +45,7 @@ public class RedisDeviceRealtimeCacheStore implements DeviceRealtimeCacheStore {
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         String prefix = appProperties.getCollect().getRedisKeyPrefix();
-        this.keyPrefix = StringUtils.hasText(prefix) ? prefix.trim() : "collect:device:realtime";
+        this.keyPrefix = StringUtils.hasText(prefix) ? prefix.trim() : "omes:dwg:device:realtime";
 
         this.saveScript = new DefaultRedisScript<>();
         this.saveScript.setScriptText(DeviceRealtimeCacheLuaScripts.SAVE);
