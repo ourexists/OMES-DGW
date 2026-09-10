@@ -53,7 +53,7 @@ spring:
 | 环境变量 | 默认 | 对应 yml 路径 | 说明 |
 |----------|------|---------------|------|
 | `COLLECT_STORE_BACKEND` | caffeine | `app.collect.store-backend` | `caffeine` 本地；`redis` 需 `-Pcache-redis` 打包 |
-| `COLLECT_REDIS_KEY_PREFIX` | collect:device:realtime | `app.collect.redis-key-prefix` | 仅 redis 模式：实时缓存键前缀 |
+| `COLLECT_REDIS_KEY_PREFIX` | omes:dwg:device:realtime | `app.collect.redis-key-prefix` | 仅 redis 模式：实时缓存键前缀 |
 | `REDIS_HOST` | localhost | `spring.data.redis.host` | 仅 redis 模式 |
 | `REDIS_PORT` | 6379 | `spring.data.redis.port` | 仅 redis 模式 |
 | `REDIS_PASSWORD` | （空） | `spring.data.redis.password` | 仅 redis 模式 |

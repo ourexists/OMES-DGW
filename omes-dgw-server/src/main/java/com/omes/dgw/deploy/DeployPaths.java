@@ -4,9 +4,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
 
 /**
- * 部署旁路路径（相对进程工作目录，与 Docker /app 布局一致）。
+ * 开发时统一使用仓库根目录；独立部署时使用进程工作目录。
  */
 @Component
 public class DeployPaths {
@@ -18,8 +19,18 @@ public class DeployPaths {
             @Value("${app.deploy.config-file:config/config.properties}") String configFile,
             @Value("${app.deploy.plugins-dir:plugins}") String pluginsDir
     ) {
-        this.configFile = Path.of(configFile).toAbsolutePath().normalize();
-        this.pluginsDir = Path.of(pluginsDir).toAbsolutePath().normalize();
+        Path root = rootDirectory(Path.of(""));
+        this.configFile = root.resolve(configFile).normalize();
+        this.pluginsDir = root.resolve(pluginsDir).normalize();
+    }
+
+    public static Path rootDirectory(Path workingDirectory) {
+        Path working = workingDirectory.toAbsolutePath().normalize();
+        for (Path directory = working; directory != null; directory = directory.getParent()) {
+            if (Files.isRegularFile(directory.resolve("pom.xml"))
+                    && Files.isDirectory(directory.resolve("omes-dgw-server"))) return directory;
+        }
+        return working;
     }
 
     public Path configFile() {

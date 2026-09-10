@@ -19,7 +19,7 @@ import java.util.List;
 @Service
 public class DeviceRealtimeHistoryQueueService {
 
-    private static final String QUEUE_KEY = "collect:history:queue";
+    private static final String QUEUE_KEY = "omes:dwg:history:queue";
 
     private final ObjectMapper objectMapper;
     private final BoundedListQueueOps boundedQueueOps;

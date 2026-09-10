@@ -19,6 +19,9 @@ public class App {
 
     public static void main(String[] args) {
         com.omes.dgw.deploy.RestartProcess.awaitPreviousProcess();
-        SpringApplication.run(App.class, args);
+        SpringApplication application = new SpringApplication(App.class);
+        application.setDefaultProperties(java.util.Map.of("omes.deploy.root",
+                com.omes.dgw.deploy.DeployPaths.rootDirectory(java.nio.file.Path.of("")).toString().replace('\\', '/')));
+        application.run(args);
     }
 }

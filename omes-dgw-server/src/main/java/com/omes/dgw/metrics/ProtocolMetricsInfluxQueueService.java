@@ -17,7 +17,7 @@ import java.util.List;
 @Service
 public class ProtocolMetricsInfluxQueueService {
 
-    private static final String QUEUE_KEY = "collect:metrics:queue";
+    private static final String QUEUE_KEY = "omes:dwg:metrics:queue";
 
     private final ObjectMapper objectMapper;
     private final BoundedListQueueOps boundedQueueOps;

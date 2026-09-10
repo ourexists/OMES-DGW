@@ -208,7 +208,7 @@ public final class RuntimeConfigCatalog {
                                 .withGroup("连接管理"),
                         integer("REDIS_DATABASE", "Database", "0", null)
                                 .withGroup("连接管理"),
-                        string("COLLECT_REDIS_KEY_PREFIX", "键前缀", "collect:device:realtime", "实时缓存键前缀；待写队列由主服务持有")
+                        string("COLLECT_REDIS_KEY_PREFIX", "键前缀", "omes:dwg:device:realtime", "实时缓存键前缀；待写队列由主服务持有")
                                 .withGroup("键空间")
                 )
         );

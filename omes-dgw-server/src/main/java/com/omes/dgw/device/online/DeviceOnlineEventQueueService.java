@@ -19,7 +19,7 @@ import java.util.List;
 @ConditionalOnProperty(prefix = "app.collect.online-event", name = "enabled", havingValue = "true")
 public class DeviceOnlineEventQueueService {
 
-    private static final String QUEUE_KEY = "collect:online-event:queue";
+    private static final String QUEUE_KEY = "omes:dwg:online-event:queue";
 
     private final ObjectMapper objectMapper;
     private final BoundedListQueueOps boundedQueueOps;

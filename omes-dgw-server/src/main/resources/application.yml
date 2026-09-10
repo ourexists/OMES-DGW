@@ -6,7 +6,7 @@ spring:
   application:
     name: omes-dgw-server
   config:
-    import: optional:file:config/config.properties
+    import: optional:file:${omes.deploy.root:.}/config/config.properties
   servlet:
     multipart:
       max-file-size: 64MB
@@ -69,7 +69,7 @@ app:
     # caffeine=本地 Caffeine+进程内队列；redis=需引入 omes-dgw-plugin-redis 插件并配置 REDIS_*
     monitor-type: ${COLLECT_MONITOR_TYPE:none}
     store-backend: ${COLLECT_STORE_BACKEND:caffeine}
-    redis-key-prefix: ${COLLECT_REDIS_KEY_PREFIX:collect:device:realtime}
+    redis-key-prefix: ${COLLECT_REDIS_KEY_PREFIX:omes:dwg:device:realtime}
     polling-scheduler-pool-size: ${COLLECT_POLLING_SCHEDULER_POOL_SIZE:4}
     poll-skip-warn-threshold: ${COLLECT_POLL_SKIP_WARN_THRESHOLD:10}
     diagnostics:

@@ -40,7 +40,7 @@ REDIS_PORT=6379
 REDIS_PASSWORD=
 REDIS_DATABASE=0
 # 可选
-COLLECT_REDIS_KEY_PREFIX=collect:device:realtime
+COLLECT_REDIS_KEY_PREFIX=omes:dwg:device:realtime
 ```
 
 未引入插件却配置 `store-backend=redis` 时，主应用会启动失败并提示加入 `omes-dgw-plugin-redis`。

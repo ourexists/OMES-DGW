@@ -25,7 +25,7 @@ public class AppProperties {
          */
         private String storeBackend = "caffeine";
         /** Redis 实时缓存键前缀（仅 store-backend=redis） */
-        private String redisKeyPrefix = "collect:device:realtime";
+        private String redisKeyPrefix = "omes:dwg:device:realtime";
         /** 协议轮询 cron 触发共用调度线程池大小 */
         private int pollingSchedulerPoolSize = 4;
         /**

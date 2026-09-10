@@ -230,7 +230,7 @@ public class StorePluginService {
         if (request.getRedisKeyPrefix() != null) {
             String prefix = request.getRedisKeyPrefix().trim();
             updates.put("COLLECT_REDIS_KEY_PREFIX",
-                    prefix.isEmpty() ? "collect:device:realtime" : prefix);
+                    prefix.isEmpty() ? "omes:dwg:device:realtime" : prefix);
         }
     }
 
@@ -296,7 +296,7 @@ public class StorePluginService {
                 .redisPort(parseInt(props.get("REDIS_PORT"), 6379))
                 .redisPasswordSet(StringUtils.hasText(props.get("REDIS_PASSWORD")))
                 .redisDatabase(parseInt(props.get("REDIS_DATABASE"), 0))
-                .redisKeyPrefix(props.getOrDefault("COLLECT_REDIS_KEY_PREFIX", "collect:device:realtime"))
+                .redisKeyPrefix(props.getOrDefault("COLLECT_REDIS_KEY_PREFIX", "omes:dwg:device:realtime"))
                 .hint(hint)
                 .build();
     }
