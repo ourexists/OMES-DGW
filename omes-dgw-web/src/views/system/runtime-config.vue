@@ -58,15 +58,15 @@
                   section-id="cache-flush"
                   compact
                   hide-description
-                  @saved="redisPluginRef?.reload?.()"
+                  
                 >
                   <template #field="{ field, values }">
-                    <PluginChoiceCards v-model="values[field.key]" :label="field.label" :options="cacheChoices(field)" />
+                    <ChoiceCards v-model="values[field.key]" :label="field.label" :options="cacheChoices(field)" />
                   </template>
                   <template #before-footer="{ values }">
                     <div v-if="values.COLLECT_STORE_BACKEND === 'redis'" class="backend-details">
                       <ConfigSectionForm
-                        section-id="plugin-redis"
+                        section-id="redis"
                         compact
                         hide-description
                       />
@@ -78,22 +78,22 @@
             <template v-else-if="activeTab === 'monitor-collect'">
               <ConfigSectionForm
                 ref="formRef"
-                section-id="plugin-influx"
+                section-id="influx"
                 :visible-keys="['COLLECT_MONITOR_TYPE']"
                 compact
                 hide-description
               >
                 <template #field="{ field, values }">
-                  <PluginChoiceCards
+                  <ChoiceCards
                     v-model="values[field.key]"
                     :label="field.label"
-                    :options="pluginChoices['monitor-collect']"
+                    :options="backendChoices['monitor-collect']"
                   />
                 </template>
                 <template #before-footer="{ values }">
                   <div v-if="values.COLLECT_MONITOR_TYPE === 'influxdb'" class="backend-details">
                     <ConfigSectionForm
-                      section-id="plugin-influx"
+                      section-id="influx"
                       :visible-groups="['连接管理', '历史落库', '指标落库']"
                       compact
                       hide-description
@@ -133,8 +133,8 @@ import {
 } from '@ant-design/icons-vue'
 import { listRuntimeConfigSections, restartSystem, getSystemRestartStatus } from '@/api/system'
 import ConfigSectionForm from './components/ConfigSectionForm.vue'
-import PluginChoiceCards from './components/PluginChoiceCards.vue'
-import { pluginChoices } from './pluginChoices'
+import ChoiceCards from './components/ChoiceCards.vue'
+import { backendChoices } from './backendChoices'
 
 const loading = ref(false)
 const restarting = ref(false)
@@ -215,7 +215,7 @@ const activeTab = ref('')
 const formRef = ref(null)
 const monitorEnabled = values => values.COLLECT_MONITOR_TYPE === 'influxdb'
 const cacheChoices = field => (field.options || []).map(value =>
-  pluginChoices['cache-flush'].find(option => option.value === value) || { value, label: value, description: '' }
+  backendChoices['cache-flush'].find(option => option.value === value) || { value, label: value, description: '' }
 )
 
 const metaMap = {
@@ -230,7 +230,7 @@ const metaMap = {
     iconBg: 'rgba(220, 38, 38, 0.1)',
     iconColor: '#dc2626',
     shortDesc: '缓存后端与 Redis 连接',
-    description: '选择实时缓存后端，安装和配置对应插件，保存后在线生效。采集队列由主服务持有。'
+    description: '选择实时缓存后端；Redis 连接参数在下方展开。'
   },
   'monitor-collect': {
     icon: CloudServerOutlined,
@@ -238,7 +238,7 @@ const metaMap = {
     iconColor: '#1677ff',
     shortDesc: 'Influx 连接与落库',
     title: '监控采集',
-    description: '选择监控采集插件，管理安装、连接与落库配置。',
+    description: '选择监控采集类型；Influx 连接与落库参数在下方展开。',
     synthetic: true
   },
   'collect-runtime': {

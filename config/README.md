@@ -6,5 +6,3 @@
 | 中控电脑 | `config-center.properties` | `omes-dgw-portal-center` 使用 |
 
 部署时放在 JAR 同级 `config/` 目录。可用环境变量 `DEPLOY_CONFIG_FILE` 覆盖路径。
-
-旧文件 `config.properties` 已废弃，请改用上表对应文件。

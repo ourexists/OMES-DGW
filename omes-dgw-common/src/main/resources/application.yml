@@ -53,7 +53,7 @@ mybatis-plus:
 
 # 门户差异化配置（app.portal / app.collect / app.influx）见各门户 application.yml：
 #   omes-dgw-portal-box / omes-dgw-portal-center
-# 管理平台：用户、JWT、菜单均可在配置中维护，无需数据库
+# 管理平台：用户与 JWT 在配置中维护，无需数据库；侧栏菜单由前端固定配置
 app:
   security:
     jwt:
@@ -70,60 +70,3 @@ app:
         nickname: 运营人员
         roles:
           - OPERATOR
-  menus:
-    - id: monitoring-overview
-      title: 总览
-      path: /monitoring/overview
-      icon: monitor
-      roles:
-        - ADMIN
-        - OPERATOR
-    - id: equipment-overview
-      title: 设备监控
-      path: /equipment/overview
-      icon: cluster
-      roles:
-        - ADMIN
-        - OPERATOR
-    - id: equipment-ledger
-      title: 设备台账
-      path: /equipment/ledger
-      icon: setting
-      roles:
-        - ADMIN
-        - OPERATOR
-    - id: equipment-command
-      title: 指令记录
-      path: /equipment/command
-      icon: profile
-      roles:
-        - ADMIN
-    - id: system-runtime-config
-      title: 系统配置
-      path: /system/runtime-config
-      icon: setting
-      roles:
-        - ADMIN
-
-  # app.deploy.config-file 由各门户 application.yml 指定（config-box / config-center）
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,prometheus,metrics
-  metrics:
-    tags:
-      application: ${spring.application.name}
-    enable:
-      jvm: true
-      jdbc: true
-  prometheus:
-    metrics:
-      export:
-        enabled: true
-
-# 日志由 log4j2-spring.xml 配置；可通过环境变量覆盖
-# LOG_PATH=logs
-logging:
-  config: classpath:log4j2-spring.xml

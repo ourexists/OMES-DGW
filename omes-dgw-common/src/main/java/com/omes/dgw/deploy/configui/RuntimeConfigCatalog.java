@@ -43,15 +43,9 @@ public final class RuntimeConfigCatalog {
                 collectRuntime(),
                 observability(),
                 statusControl(),
-                redisPlugin(),
-                influxPlugin()
+                redis(),
+                influx()
         );
-    }
-
-    /** @deprecated 使用 {@link #all(PortalMode)} */
-    @Deprecated
-    public static List<ConfigSectionDef> all() {
-        return all(PortalMode.CENTER);
     }
 
     public static ConfigSectionDef byId(String id, PortalMode mode) {
@@ -59,12 +53,6 @@ public final class RuntimeConfigCatalog {
                 .filter(s -> s.id().equals(id))
                 .findFirst()
                 .orElse(null);
-    }
-
-    /** @deprecated 使用 {@link #byId(String, PortalMode)} */
-    @Deprecated
-    public static ConfigSectionDef byId(String id) {
-        return byId(id, PortalMode.CENTER);
     }
 
     private static ConfigSectionDef dataStore() {
@@ -253,12 +241,12 @@ public final class RuntimeConfigCatalog {
         );
     }
 
-    private static ConfigSectionDef redisPlugin() {
+    private static ConfigSectionDef redis() {
         return new ConfigSectionDef(
-                "plugin-redis",
+                "redis",
                 "Redis 连接",
                 "Redis 连接参数（中控；默认见 portal-center application.yml）",
-                "plugin-redis",
+                "redis",
                 List.of(
                         string("REDIS_HOST", "Redis Host", "localhost", null)
                                 .withGroup("连接管理"),
@@ -274,12 +262,12 @@ public final class RuntimeConfigCatalog {
         );
     }
 
-    private static ConfigSectionDef influxPlugin() {
+    private static ConfigSectionDef influx() {
         return new ConfigSectionDef(
-                "plugin-influx",
+                "influx",
                 "Influx 监控采集",
                 "InfluxDB 连接与历史/指标落库（中控；默认见 portal-center application.yml）",
-                "plugin-influx",
+                "influx",
                 concat(
                         List.of(
                                 select("COLLECT_MONITOR_TYPE", "采集监控类型", "influxdb",

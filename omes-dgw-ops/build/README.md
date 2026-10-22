@@ -72,7 +72,7 @@ build/
 ## 发布检查
 
 1. 校验 `build/images/` 下 3 个 tar 齐全
-2. 同步 `config-templates`（config.properties / nginx / monitoring）
+2. 同步 `config-templates`（config-center.properties / nginx / monitoring）
 3. 复制到 `release/omes-dgw-deploy/`
 
 详见上级 [README.md](../README.md)。

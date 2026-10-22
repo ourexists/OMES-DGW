@@ -40,27 +40,6 @@ app:
         roles:
           - OPERATOR
 
-  menus:
-    - id: equipment-ledger
-      title: 设备台账
-      path: /equipment/ledger
-      icon: setting
-      roles:
-        - ADMIN
-        - OPERATOR
-    - id: equipment-overview
-      title: 设备监控
-      path: /equipment/overview
-      icon: cluster
-      roles:
-        - ADMIN
-        - OPERATOR
-    - id: system-runtime-config
-      title: 系统配置
-      path: /system/runtime-config
-      icon: setting
-      roles:
-        - ADMIN
   collect:
     enabled: false
     store-backend: caffeine

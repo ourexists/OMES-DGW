@@ -3,17 +3,17 @@ package com.omes.dgw.deploy;
 import com.omes.dgw.common.BusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.ApplicationArguments;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Restart the JVM so uploaded plugins are loaded by a fresh class loader. */
+/** 重启 JVM，使外部 config/*.properties 等变更生效。 */
 @Service
 public class SystemRestartService {
     private static final Logger log = LoggerFactory.getLogger(SystemRestartService.class);
@@ -21,16 +21,13 @@ public class SystemRestartService {
     private final String instanceId = UUID.randomUUID().toString();
     private final ConfigurableApplicationContext context;
     private final String[] args;
-    private final DeployPaths paths;
     private final boolean supervised;
     private volatile String failure;
 
     public SystemRestartService(ConfigurableApplicationContext context, ApplicationArguments arguments,
-                                DeployPaths paths,
                                 @Value("${app.deploy.restart-supervised:false}") boolean supervised) {
         this.context = context;
         this.args = arguments.getSourceArgs().clone();
-        this.paths = paths;
         this.supervised = supervised;
     }
 
@@ -49,7 +46,7 @@ public class SystemRestartService {
                 if (supervised) {
                     replacement = null;
                 } else {
-                    var command = RestartProcess.command(paths.pluginsDir(), args);
+                    var command = RestartProcess.command(args);
                     Path output = Path.of("logs", "system-restart.log").toAbsolutePath();
                     Files.createDirectories(output.getParent());
                     replacement = new ProcessBuilder(command)
@@ -78,7 +75,9 @@ public class SystemRestartService {
                     failure = ex.getMessage();
                     log.error("Application restart failed; manual recovery may be required", ex);
                 } finally {
-                    if (replacement != null && replacement.isAlive()) replacement.destroy();
+                    if (replacement != null && replacement.isAlive()) {
+                        replacement.destroy();
+                    }
                     RESTARTING.set(false);
                 }
             }, "system-restart");
@@ -88,5 +87,6 @@ public class SystemRestartService {
         return status();
     }
 
-    public record RestartStatus(String instanceId, boolean restarting, String failure) { }
+    public record RestartStatus(String instanceId, boolean restarting, String failure) {
+    }
 }

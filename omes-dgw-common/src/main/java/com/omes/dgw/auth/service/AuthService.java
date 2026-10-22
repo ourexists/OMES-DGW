@@ -1,19 +1,17 @@
 package com.omes.dgw.auth.service;
 
+import com.omes.dgw.auth.security.ConfigUserDetailsService;
+import com.omes.dgw.auth.security.JwtTokenProvider;
 import com.omes.dgw.config.AppProperties;
 import com.omes.dgw.device.dto.LoginRequest;
 import com.omes.dgw.device.dto.LoginResponse;
-import com.omes.dgw.device.dto.MenuVo;
 import com.omes.dgw.device.dto.UserInfoVo;
-import com.omes.dgw.auth.security.ConfigUserDetailsService;
-import com.omes.dgw.auth.security.JwtTokenProvider;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,20 +21,17 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final ConfigUserDetailsService userDetailsService;
-    private final MenuService menuService;
     private final AppProperties appProperties;
 
     public AuthService(
             AuthenticationManager authenticationManager,
             JwtTokenProvider jwtTokenProvider,
             ConfigUserDetailsService userDetailsService,
-            MenuService menuService,
             AppProperties appProperties
     ) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
         this.userDetailsService = userDetailsService;
-        this.menuService = menuService;
         this.appProperties = appProperties;
     }
 
@@ -48,13 +43,11 @@ public class AuthService {
         String token = jwtTokenProvider.createToken(userDetails);
         Set<String> roles = extractRoleNames(authentication);
         UserInfoVo user = buildUserInfo(authentication.getName(), roles);
-        List<MenuVo> menus = menuService.menusForRoles(roles);
         return LoginResponse.builder()
                 .token(token)
                 .tokenType("Bearer")
                 .expiresInMs(appProperties.getSecurity().getJwt().getExpirationMs())
                 .user(user)
-                .menus(menus)
                 .build();
     }
 

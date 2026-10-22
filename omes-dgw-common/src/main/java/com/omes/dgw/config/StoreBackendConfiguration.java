@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * 存储 SPI 兜底装配：各 store 模块通过 AutoConfiguration 提供真实 {@code @Bean}；
- * 此处仅在 caffeine / monitor-type=none 时注册 Noop 与本地队列，不再使用 PF4J proxy。
+ * 此处仅在 caffeine / monitor-type=none 时注册 Noop 与本地队列。
  */
 @Configuration
 public class StoreBackendConfiguration {

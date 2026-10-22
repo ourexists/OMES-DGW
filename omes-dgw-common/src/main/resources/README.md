@@ -169,11 +169,11 @@ INFLUX_TOKEN=your-token
 
 ### 1.4 仍须在 yml 内维护的项
 
-以下配置 **未** 列入 `config.properties`，需直接改 `application.yml` 或另行打包：
+以下配置 **未** 列入门户外部 `config-*.properties`，需改各门户 `application.yml` 或另行打包：
 
-- `server.port`（默认 12010）
+- `server.port`（默认 12020）
 - `app.security`（JWT 密钥、内置用户与角色）
-- `app.menus`（管理平台菜单）
+- 侧栏菜单：前端 `omes-dgw-web/src/config/menus.js`（不走后端菜单权限）
 - `app.collect.metrics.sample-interval-sec`、`history-minutes` 等无环境变量占位的细项
 - `management.endpoints`（Actuator 暴露端点）
 

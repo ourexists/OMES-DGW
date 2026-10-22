@@ -11,23 +11,24 @@ import java.util.List;
 public class AppProperties {
 
     /**
-     * 门户模式：{@code app.portal.mode=memory|edge}�?     * memory=全程内存且通常 {@code app.collect.enabled=false}；edge=Redis+Influx 完整采集�?     */
+     * 门户模式：{@code app.portal.mode=box|center}（旧值 memory/edge 仍可解析）。
+     */
     private Portal portal = new Portal();
     private Collect collect = new Collect();
     private Influx influx = new Influx();
     private Security security = new Security();
-    private List<MenuItem> menus = new ArrayList<>();
 
     @Data
     public static class Portal {
-        /** memory | edge，对�?{@link com.omes.dgw.portal.PortalMode} */
+        /** box | center，对应 {@link com.omes.dgw.portal.PortalMode} */
         private String mode = "box";
     }
 
     @Data
     public static class Collect {
         /**
-         * 是否启动协议采集轮询（DeviceLifecycleManager.startProtocol 等）�?         * 盒子门户应为 false；edge 默认�?true。缺�?true 以兼容旧配置�?         */
+         * 是否启动协议采集轮询。盒子门户应为 false；中控默认为 true。
+         */
         private boolean enabled = true;
         /** 采集监控类型：none（无）或 influxdb�?*/
         private String monitorType = "none";
@@ -243,15 +244,5 @@ public class AppProperties {
         private String nickname;
         private List<String> roles = new ArrayList<>();
         private boolean enabled = true;
-    }
-
-    @Data
-    public static class MenuItem {
-        private String id;
-        private String title;
-        private String path;
-        private String icon;
-        private List<String> roles = new ArrayList<>();
-        private List<MenuItem> children = new ArrayList<>();
     }
 }

@@ -6,7 +6,7 @@ public record ConfigSectionDef(
         String id,
         String title,
         String description,
-        /** builtin=系统配置；plugin-redis / plugin-influx=插件二级窗口 */
+        /** builtin=侧栏主分区；redis / influx=嵌套连接配置 */
         String group,
         List<ConfigFieldDef> fields
 ) {

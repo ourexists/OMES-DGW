@@ -1,6 +1,5 @@
 # =============================================================================
 # omes-dgw 根仓库：忽略构建产物、本地运行时数据、IDE / OS 文件
-# 保留 config/config.properties、monitoring/、plugins/.gitkeep 等仓库模板与占位
 # =============================================================================
 
 # --- Maven / Java 构建 ---
@@ -24,11 +23,12 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# --- 盒子门户：勿提交内嵌构建产物（由 Maven 写入 target/classes/static）---
+omes-dgw-portal-box/src/main/resources/static/
+
 # --- 本地运行时（JAR 同级工作目录）---
 /logs/
 /data/
-/plugins/*
-!/plugins/.gitkeep
 
 # --- 本地密钥与环境文件（保留 *.example）---
 .env

@@ -57,7 +57,7 @@
 
       <slot name="before-footer" :values="form" />
       <div v-if="!hideFooter" class="form-footer">
-        <div class="form-footer__hint">{{ sectionId.startsWith('plugin-') ? '保存后在线生效，无需重启。' : '保存后，部分配置需重启生效。' }}</div>
+        <div class="form-footer__hint">{{ ['redis', 'influx'].includes(sectionId) ? '保存后在线生效，无需重启。' : '保存后，部分配置需重启生效。' }}</div>
         <a-space wrap>
           <slot name="extra-actions" />
           <a-button :loading="loading" @click="reload">重置</a-button>

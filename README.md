@@ -43,7 +43,7 @@ mvn -pl omes-dgw-portal-box -am spring-boot:run
 mvn -pl omes-dgw-portal-center -am spring-boot:run
 ```
 
-约定配置：`app.portal.mode`（`box` / `center`，兼容旧值 `memory`→BOX、`edge`→CENTER）、`app.collect.enabled`、`app.collect.store-backend`、`app.collect.monitor-type`。
+约定配置：`app.portal.mode`（`box` / `center`）、`app.collect.enabled`、`app.collect.store-backend`、`app.collect.monitor-type`。
 
 外部覆盖配置（JAR 同级 `config/`，门户各自一份）：
 
@@ -54,9 +54,9 @@ mvn -pl omes-dgw-portal-center -am spring-boot:run
 
 说明见 [`config/README.md`](config/README.md)。可用环境变量 `DEPLOY_CONFIG_FILE` 覆盖路径。
 
-## 存储模块（编译期依赖，非 PF4J）
+## 存储模块
 
-实时快照默认 Caffeine（盒子门户）。中控门户固定 Redis + InfluxDB 2.x。存储以普通 Maven 模块引入，**不再**支持插件 jar 热插拔。
+实时快照默认 Caffeine（盒子门户）。中控门户固定 Redis + InfluxDB 2.x。存储以普通 Maven 模块引入。
 
 可观测性：`/actuator/health`、`/actuator/prometheus`。接口文档由 springdoc 提供。门户信息：`GET /system/portal`。
 
@@ -72,8 +72,6 @@ mvn -DskipTests package
 
 - `omes-dgw-portal-box/target/omes-dgw-portal-box-*.jar`（已内嵌 `omes-dgw-web` 的 `build:box` 产物）
 - `omes-dgw-portal-center/target/omes-dgw-portal-center-*.jar`
-
-已删除的旧模块：`omes-dgw-server`、`omes-dgw-portal-memory`、`omes-dgw-portal-edge`。
 
 前端：
 
@@ -99,6 +97,5 @@ mvn -DskipTests package
 | 文档 | 内容 |
 | --- | --- |
 | [服务端资源配置](omes-dgw-common/src/main/resources/README.md) | 外部配置、Modbus 调参、离线检测 |
-| [存储插件热插拔（已废弃）](docs/store-plugin-hot-swap.md) | 旧 PF4J 方案说明 |
 | [运维交付](omes-dgw-ops/README.md) | 打镜像和生成实施包 |
 | [Prometheus](monitoring/prometheus/README.md) | 指标与告警规则 |

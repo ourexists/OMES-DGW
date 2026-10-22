@@ -76,7 +76,7 @@ cd docker
 
 1. 检查 `build/images/` 下 3 个 tar 是否齐全（缺失则自动跑 `build-all`）
 2. 将 `deploy/` 模板复制到 `release/omes-dgw-deploy/`
-3. 从源码同步 `config-templates/`（`config.properties`、nginx、`monitoring`）
+3. 从源码同步 `config-templates/`（`config-center.properties`、nginx、`monitoring`）
 4. 复制镜像 tar 与 `.env`（若 `deploy/.env` 存在）
 
 交付目录：**`release/omes-dgw-deploy/`**（整个文件夹拷给实施，不含源码）。

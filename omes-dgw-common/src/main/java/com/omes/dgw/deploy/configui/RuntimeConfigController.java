@@ -29,7 +29,7 @@ public class RuntimeConfigController {
         this.runtimeConfigService = runtimeConfigService;
     }
 
-    @Operation(summary = "列出配置分区（可按 group 过滤：builtin / plugin-redis / plugin-influx）")
+    @Operation(summary = "列出配置分区（可按 group 过滤：builtin / redis / influx）")
     @GetMapping
     public Result<List<RuntimeConfigSectionVo>> list(
             @RequestParam(value = "group", required = false) String group

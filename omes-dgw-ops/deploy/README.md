@@ -97,7 +97,7 @@ INFLUX_URL=http://influxdb:8086
 
 | 路径 | 内容 |
 |------|------|
-| `omes-dgw/config/` | `config.properties`（启动时从 `.env` 同步 SQLite/Influx） |
+| `omes-dgw/config/` | `config-center.properties`（启动时从 `.env` 同步 SQLite/Influx） |
 | `omes-dgw/logs/` | 后端日志 |
 | `omes-dgw/data/` | SQLite 与运行时数据 |
 | `nginx/default.conf` | Nginx 配置（含 `/api` 代理，每次启动从模板同步） |
@@ -120,7 +120,7 @@ INFLUX_URL=http://influxdb:8086
 `03-启动.bat` 内部流程：
 
 1. `03-load-images.ps1`：加载 3 个 tar（本地已有同名镜像则跳过）
-2. 同步 `nginx/default.conf`、`config.properties` 到 `MOUNT_PATH`
+2. 同步 `nginx/default.conf`、`config-center.properties` 到 `MOUNT_PATH`
 3. 若 `USE_BUNDLED_INFLUX=true`，先 `--wait` 启动 influxdb
 4. 等待 `omes-dgw-server` 健康后启动 `omes-dgw-web`
 5. 重启 front 使 Nginx 配置生效
