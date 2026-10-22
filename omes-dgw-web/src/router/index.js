@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { usePortalStore } from '@/stores/portal'
 
 const viewModules = import.meta.glob('../views/**/*.vue')
 
@@ -129,25 +130,27 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
-  
-  // 设置页面标题
+
   document.title = `${to.meta.title || ''} - OMES DGW`
-  
-  // 白名单：不需要登录的页面
+
   const whiteList = ['/login']
-  
-  // 如果在白名单内，直接放行
+
   if (whiteList.includes(to.path)) {
     next()
     return
   }
-  
-  // 其他页面需要登录
+
   if (!userStore.token || !userStore.tokenType) {
     next('/login')
     return
+  }
+
+  try {
+    await usePortalStore().ensureLoaded()
+  } catch (e) {
+    console.warn('加载门户能力失败:', e)
   }
 
   const hasNewRoute = setupDynamicRoutes(userStore.menus)
@@ -166,7 +169,7 @@ router.beforeEach((to, from, next) => {
     next()
     return
   }
-  
+
   next()
 })
 

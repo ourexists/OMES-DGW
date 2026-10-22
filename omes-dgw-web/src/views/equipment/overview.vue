@@ -79,14 +79,18 @@
         <p v-if="deviceMessage(item)" class="device-message" :title="deviceMessage(item)">{{ deviceMessage(item) }}</p>
 
         <div class="card-actions" @click.stop>
-          <a-button size="small" @click="viewHistory(item)">
-            <LineChartOutlined />
-            采集
-          </a-button>
-          <a-button size="small" @click="viewCollectMetrics(item)">
-            <DashboardOutlined />
-            性能
-          </a-button>
+          <a-tooltip :title="pointHistoryAvailable ? '点位历史（Influx）' : '当前门户未启用 Influx 点位历史'">
+            <a-button size="small" :disabled="!pointHistoryAvailable" @click="viewHistory(item)">
+              <LineChartOutlined />
+              历史
+            </a-button>
+          </a-tooltip>
+          <a-tooltip :title="`性能指标（${collectMetricsModeLabel}）`">
+            <a-button size="small" @click="viewCollectMetrics(item)">
+              <DashboardOutlined />
+              性能
+            </a-button>
+          </a-tooltip>
           <a-button v-if="item.status === 'online'" size="small" @click="openWriteModal(item)">
             <EditOutlined />
             测写
@@ -177,6 +181,7 @@
 <script setup>
 import { ref, computed, reactive, onBeforeUnmount, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { message } from 'ant-design-vue'
 import {
   DashboardOutlined,
@@ -193,8 +198,11 @@ import {
   openDeviceRealtimeConnection,
   writeDevicePoint
 } from '@/api/equipment'
+import { usePortalStore } from '@/stores/portal'
 
 const router = useRouter()
+const portalStore = usePortalStore()
+const { pointHistoryAvailable, collectMetricsModeLabel } = storeToRefs(portalStore)
 
 const equipmentList = ref([])
 const refreshInterval = ref(5000)
@@ -732,6 +740,7 @@ const restartPolling = () => {
 }
 
 onMounted(async () => {
+  await portalStore.ensureLoaded()
   await loadData()
   startPolling()
 })

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { login as loginApi } from '@/api/auth'
 import { APP_MENUS, DEFAULT_HOME_PATH } from '@/config/menus'
+import { usePortalStore } from '@/stores/portal'
 
 export const useUserStore = defineStore('user', () => {
   const token = ref('')
@@ -42,6 +43,12 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('expiresInMs', String(expiresInMs.value))
     localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
 
+    try {
+      await usePortalStore().ensureLoaded(true)
+    } catch (e) {
+      console.warn('加载门户能力失败:', e)
+    }
+
     return userInfo.value
   }
 
@@ -79,6 +86,7 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('expiresInMs')
     localStorage.removeItem('userInfo')
     localStorage.removeItem('menus')
+    usePortalStore().reset()
   }
 
   return {

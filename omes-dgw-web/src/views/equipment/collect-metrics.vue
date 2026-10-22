@@ -6,14 +6,14 @@
         <div v-if="metricsMeta.deviceCode" class="page-subtitle">
           {{ metricsMeta.deviceCode }}
           <span v-if="metricsMeta.protocol"> · {{ metricsMeta.protocol }}</span>
+          <a-tag :color="querySource === 'influx' ? 'blue' : 'orange'" style="margin-left: 8px">
+            {{ querySourceLabel }}
+          </a-tag>
         </div>
       </div>
       <a-space>
         <a-select v-model:value="searchForm.minutes" style="width: 140px" @change="loadChart">
-          <a-select-option :value="10">近10分钟</a-select-option>
-          <a-select-option :value="20">近20分钟</a-select-option>
-          <a-select-option :value="30">近30分钟</a-select-option>
-          <a-select-option :value="60">近60分钟</a-select-option>
+          <a-select-option v-for="m in minuteOptions" :key="m" :value="m">近{{ m }}分钟</a-select-option>
         </a-select>
         <a-select v-model:value="refreshInterval" style="width: 140px" @change="restartPolling">
           <a-select-option :value="0">手动刷新</a-select-option>
@@ -106,17 +106,32 @@
 </template>
 
 <script setup>
-import {nextTick, onBeforeUnmount, onMounted, reactive, ref} from 'vue'
+import {computed, nextTick, onBeforeUnmount, onMounted, reactive, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
+import {storeToRefs} from 'pinia'
 import {message} from 'ant-design-vue'
 import { LeftOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import * as echarts from 'echarts'
 import {getCollectMetricsSummaryChart} from '@/api/equipment'
+import {usePortalStore} from '@/stores/portal'
 import {
   formatPercent,
   normalizeMetricsChartData,
   buildChartYAxis
 } from '@/utils/collect-metrics-chart'
+
+const portalStore = usePortalStore()
+const { metricsMinuteOptions, collectMetricsModeLabel, collectMetricsMode } = storeToRefs(portalStore)
+const minuteOptions = computed(() => {
+  const opts = metricsMinuteOptions.value
+  return opts.length ? opts : [10, 20, 30, 60]
+})
+const querySource = ref('')
+const querySourceLabel = computed(() => {
+  if (querySource.value === 'influx') return 'Influx 历史'
+  if (querySource.value === 'memory') return '内存缓存'
+  return collectMetricsModeLabel.value
+})
 
 const router = useRouter()
 const route = useRoute()
@@ -179,8 +194,16 @@ const applyMetricsMeta = data => {
   metricsMeta.pollSkip = data?.pollSkip || null
   metricsMeta.infrastructure = data?.infrastructure || null
   metricsMeta.instanceId = data?.instanceId || ''
+  querySource.value = data?.querySource || collectMetricsMode.value || ''
   if (data?.deviceName) {
     deviceName.value = data.deviceName
+  }
+}
+
+const clampMinutesToMode = () => {
+  const opts = minuteOptions.value
+  if (!opts.includes(searchForm.minutes)) {
+    searchForm.minutes = opts[opts.length - 1] || 10
   }
 }
 
@@ -315,8 +338,10 @@ const goBack = () => {
   router.back()
 }
 
-onMounted(() => {
-  loadChart()
+onMounted(async () => {
+  await portalStore.ensureLoaded()
+  clampMinutesToMode()
+  await loadChart()
   restartPolling()
   resizeHandler = () => {
     chartInstances.forEach(item => item?.resize())

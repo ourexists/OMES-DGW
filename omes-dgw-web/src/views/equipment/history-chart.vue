@@ -3,11 +3,25 @@
     <div class="page-header">
       <h2>历史曲线 - {{deviceName}}</h2>
       <a-space>
+        <a-tag v-if="pointHistoryAvailable" color="blue">Influx 历史</a-tag>
         <a-button @click="goBack">
           <LeftOutlined /> 返回
         </a-button>
       </a-space>
     </div>
+
+    <a-result
+      v-if="!pointHistoryAvailable"
+      status="info"
+      title="当前门户未启用点位历史查询"
+      sub-title="边缘盒子仅保留实时与性能指标（内存缓存）。点位历史曲线需中控门户并开启 Influx 落库。"
+    >
+      <template #extra>
+        <a-button type="primary" @click="goBack">返回</a-button>
+      </template>
+    </a-result>
+
+    <template v-else>
     <a-card class="toolbar-card" size="small">
       <a-form class="filter-form" layout="inline" :model="searchForm">
         <a-form-item v-if="analogPointOptions.length" label="曲线点位">
@@ -111,18 +125,24 @@
         </div>
       </a-spin>
     </a-card>
+    </template>
   </div>
 </template>
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { message } from 'ant-design-vue'
 import { LeftOutlined } from '@ant-design/icons-vue'
 import * as echarts from 'echarts'
 import dayjs from 'dayjs'
 import { getDeviceDetail, getDeviceSnapshotChar, getDeviceSnapshotHistory } from '@/api/equipment'
+import { usePortalStore } from '@/stores/portal'
 import { parseSwitchOn } from '@/utils/switch-status'
+
+const portalStore = usePortalStore()
+const { pointHistoryAvailable } = storeToRefs(portalStore)
 
 const BOOL_DATA_TYPES = new Set(['BOOL', 'BOOL_INV'])
 const COLLECT_ACCESS_TYPES = ['READ_ONLY', 'READ_WRITE']
@@ -728,6 +748,10 @@ const goBack = () => {
 }
 
 onMounted(async () => {
+  await portalStore.ensureLoaded()
+  if (!pointHistoryAvailable.value) {
+    return
+  }
   await loadPointOptions()
   loadChart()
   resizeHandler = () => {

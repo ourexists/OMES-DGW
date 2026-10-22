@@ -98,6 +98,14 @@
         <a-card title="持久化与缓存" size="small" class="pipeline-card">
           <a-descriptions :column="1" size="small" bordered>
             <a-descriptions-item label="实例 ID">{{ overview.instanceId || '-' }}</a-descriptions-item>
+            <a-descriptions-item label="查询模式">
+              <a-tag :color="collectMetricsMode === 'influx' ? 'blue' : 'orange'">
+                性能 {{ collectMetricsModeLabel }}
+              </a-tag>
+              <a-tag :color="pointHistoryAvailable ? 'blue' : 'default'" style="margin-left: 6px">
+                点位历史 {{ pointHistoryAvailable ? 'Influx' : '不可用' }}
+              </a-tag>
+            </a-descriptions-item>
             <a-descriptions-item label="Influx 启用">
               <a-tag :color="overview.pipelines.influxEnabled ? 'green' : 'default'">
                 {{ overview.pipelines.influxEnabled ? '是' : '否' }}
@@ -108,7 +116,7 @@
                 {{ overview.pipelines.influxMetricsPersistEnabled ? '已开启' : '未开启' }}
               </a-tag>
             </a-descriptions-item>
-            <a-descriptions-item label="Influx 写入 Leader">
+            <a-descriptions-item v-if="overview.pipelines.influxEnabled" label="Influx 写入 Leader">
               <a-tag :color="overview.pipelines.influxMetricsWriteLeader ? 'blue' : 'default'">
                 {{ overview.pipelines.influxMetricsWriteLeader ? '本实例' : '非本实例' }}
               </a-tag>
@@ -200,10 +208,12 @@
 <script setup>
 import { ref, reactive, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { message } from 'ant-design-vue'
 import { ReloadOutlined } from '@ant-design/icons-vue'
 import * as echarts from 'echarts'
 import { getMonitoringOverview } from '@/api/monitoring'
+import { usePortalStore } from '@/stores/portal'
 import {
   normalizeMetricsChartData,
   formatPercent,
@@ -212,6 +222,8 @@ import {
 } from '@/utils/collect-metrics-chart'
 
 const router = useRouter()
+const portalStore = usePortalStore()
+const { pointHistoryAvailable, collectMetricsMode, collectMetricsModeLabel } = storeToRefs(portalStore)
 
 const loading = ref(false)
 const refreshInterval = ref(30000)
@@ -469,7 +481,8 @@ const viewDeviceMetrics = record => {
   })
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await portalStore.ensureLoaded()
   loadOverview()
   restartPolling()
   resizeHandler = () => {

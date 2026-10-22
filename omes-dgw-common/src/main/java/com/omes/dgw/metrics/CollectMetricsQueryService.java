@@ -62,16 +62,19 @@ public class CollectMetricsQueryService {
         Device device = requireDevice(deviceId);
         int rangeMinutes = resolveQueryMinutes(minutes);
 
-        List<ProtocolMetricsHistoryStore.MetricsPoint> points = queryDevicePoints(device, rangeMinutes);
-        return toChartVo(device, points, rangeMinutes);
+        PointsResult result = queryDevicePoints(device, rangeMinutes);
+        CollectMetricsChartVo vo = toChartVo(device, result.points(), rangeMinutes);
+        vo.setQuerySource(result.source());
+        return vo;
     }
 
     public CollectMetricsChartVo summaryChart(Integer minutes) {
         int rangeMinutes = resolveQueryMinutes(minutes);
-        List<ProtocolMetricsHistoryStore.MetricsPoint> points = querySummaryPoints(rangeMinutes);
-        CollectMetricsChartVo vo = buildChartSeries(points);
+        PointsResult result = querySummaryPoints(rangeMinutes);
+        CollectMetricsChartVo vo = buildChartSeries(result.points());
         vo.setIntervalSec(sampleIntervalSec());
         vo.setRangeMinutes(rangeMinutes);
+        vo.setQuerySource(result.source());
         return vo;
     }
 
@@ -87,20 +90,20 @@ public class CollectMetricsQueryService {
         return overview;
     }
 
-    private List<ProtocolMetricsHistoryStore.MetricsPoint> queryDevicePoints(Device device, int rangeMinutes) {
+    private PointsResult queryDevicePoints(Device device, int rangeMinutes) {
         if (useInfluxQuery()) {
             try {
                 List<ProtocolMetricsHistoryStore.MetricsPoint> influxPoints =
                         influxQuery.getObject().queryDeviceSeries(device.getId(), rangeMinutes);
                 if (!influxPoints.isEmpty()) {
-                    return influxPoints;
+                    return new PointsResult(influxPoints, "influx");
                 }
                 log.debug("Influx 设备指标无数据，回退内存: deviceId={}", device.getId());
             } catch (Exception e) {
                 log.warn("Influx 设备指标查询失败，回退内存: deviceId={}, {}", device.getId(), e.getMessage());
             }
         }
-        return queryDevicePointsFromMemory(device, rangeMinutes);
+        return new PointsResult(queryDevicePointsFromMemory(device, rangeMinutes), "memory");
     }
 
     private List<ProtocolMetricsHistoryStore.MetricsPoint> queryDevicePointsFromMemory(Device device, int rangeMinutes) {
@@ -134,20 +137,22 @@ public class CollectMetricsQueryService {
         return List.of();
     }
 
-    private List<ProtocolMetricsHistoryStore.MetricsPoint> querySummaryPoints(int rangeMinutes) {
+    private PointsResult querySummaryPoints(int rangeMinutes) {
         if (useInfluxQuery()) {
             try {
                 List<ProtocolMetricsHistoryStore.MetricsPoint> influxPoints =
                         influxQuery.getObject().querySummarySeries(rangeMinutes);
                 if (!influxPoints.isEmpty()) {
-                    return influxPoints;
+                    return new PointsResult(influxPoints, "influx");
                 }
                 log.debug("Influx 汇总指标无数据，回退内存");
             } catch (Exception e) {
                 log.warn("Influx 汇总指标查询失败，回退内存: {}", e.getMessage());
             }
         }
-        return filterPoints(historyStore.getPoints(ProtocolMetricsHistoryStore.SUMMARY_KEY), rangeMinutes);
+        return new PointsResult(
+                filterPoints(historyStore.getPoints(ProtocolMetricsHistoryStore.SUMMARY_KEY), rangeMinutes),
+                "memory");
     }
 
     private List<CollectMetricsDeviceSnapshotVo> buildSnapshotsFromInflux(int rangeMinutes) {
@@ -300,17 +305,22 @@ public class CollectMetricsQueryService {
     }
 
     /**
-     * 解析查询时间窗（分钟）：以请求参数为准，仅受 influxQueryMaxMinutes 上限约束。
-     * historyMinutes 仅控制内存环形缓冲保留时长，不得压缩用户请求的查询范围。
+     * 解析查询时间窗（分钟）。
+     * Influx 模式：上限 {@code influxQueryMaxMinutes}；内存模式：上限 {@code historyMinutes}（环形缓冲保留窗）。
      */
     private int resolveQueryMinutes(Integer minutes) {
-        int maxAllowed = Math.max(1, appProperties.getCollect().getMetrics().getInfluxQueryMaxMinutes());
+        int maxAllowed = useInfluxQuery()
+                ? Math.max(1, appProperties.getCollect().getMetrics().getInfluxQueryMaxMinutes())
+                : Math.max(1, appProperties.getCollect().getMetrics().getHistoryMinutes());
         int requested = minutes == null || minutes <= 0 ? DEFAULT_QUERY_MINUTES : minutes;
         return Math.min(Math.max(1, requested), maxAllowed);
     }
 
     private int sampleIntervalSec() {
         return Math.max(1, appProperties.getCollect().getMetrics().getSampleIntervalSec());
+    }
+
+    private record PointsResult(List<ProtocolMetricsHistoryStore.MetricsPoint> points, String source) {
     }
 
     private Device requireDevice(String deviceId) {

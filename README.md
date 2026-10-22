@@ -6,7 +6,7 @@
 
 ## 能做什么
 
-南向已经实现的协议（仅 **中控门户** 打包）：
+南向已经实现的协议（**盒子与中控**均打包；盒子实时进内存，不写 Influx）：
 
 | 代码 | 设备 | 实现要点 |
 | --- | --- | --- |
@@ -22,8 +22,8 @@
 
 | 场景 | 模块 | 存储 | 采集 | 前端 |
 | --- | --- | --- | --- | --- |
-| **边缘盒子** | `omes-dgw-portal-box` | 仅内存 Caffeine | **无**（不依赖 collect/protocol） | **内嵌同 JAR**（不前后端分离） |
-| **中控电脑** | `omes-dgw-portal-center` | Redis + InfluxDB | **有**完整协议采集 | 独立 `omes-dgw-web` / Nginx |
+| **边缘盒子** | `omes-dgw-portal-box` | Caffeine 实时 | **有**协议采集（不写 Influx） | **内嵌同 JAR** |
+| **中控电脑** | `omes-dgw-portal-center` | Redis + InfluxDB | **有**协议采集 + 历史落库 | 独立 `omes-dgw-web` / Nginx |
 
 启动（在仓库根目录打包后）：
 
@@ -56,7 +56,7 @@ mvn -pl omes-dgw-portal-center -am spring-boot:run
 
 ## 存储模块
 
-实时快照默认 Caffeine（盒子门户）。中控门户固定 Redis + InfluxDB 2.x。存储以普通 Maven 模块引入。
+差异要点：盒子与中控都跑协议采集；盒子实时进 Caffeine、**不写 Influx**；中控用 Redis 实时 + Influx 历史。存储以普通 Maven 模块引入。
 
 可观测性：`/actuator/health`、`/actuator/prometheus`。接口文档由 springdoc 提供。门户信息：`GET /system/portal`。
 
@@ -83,12 +83,12 @@ mvn -DskipTests package
 | 模块 | 职责 |
 | --- | --- |
 | `omes-dgw-common` | 共享业务：auth/config/deploy/device 台账/queue/timeseries SPI/monitoring |
-| `omes-dgw-collect` | 仅中控：protocol + metrics 采样落库 + modscan + collectlog |
-| `omes-dgw-store-memory` | Caffeine 实时缓存 |
-| `omes-dgw-store-redis` | Redis 实时缓存与队列 |
-| `omes-dgw-store-influx` | InfluxDB 历史与指标 |
-| `omes-dgw-portal-box` | 边缘盒子 Boot 入口（内嵌前端） |
-| `omes-dgw-portal-center` | 中控电脑 Boot 入口 |
+| `omes-dgw-collect` | 协议采集（盒子/中控共用）+ metrics + modscan + collectlog |
+| `omes-dgw-store-memory` | Caffeine 实时缓存（盒子） |
+| `omes-dgw-store-redis` | Redis 实时缓存与队列（中控） |
+| `omes-dgw-store-influx` | InfluxDB 历史与指标（中控） |
+| `omes-dgw-portal-box` | 边缘盒子：采集 + Caffeine，不写 Influx；前端内嵌 |
+| `omes-dgw-portal-center` | 中控电脑：采集 + Redis + Influx |
 | `omes-dgw-web` | 管理端（盒子构建时打进 box JAR；中控仍可独立部署） |
 | `omes-dgw-ops` | 镜像和实施包（默认打 portal-center jar） |
 

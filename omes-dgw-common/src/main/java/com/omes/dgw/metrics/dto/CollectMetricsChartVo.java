@@ -18,6 +18,9 @@ public class CollectMetricsChartVo {
     /** 实际查询的时间范围（分钟） */
     private int rangeMinutes;
 
+    /** 数据来源：{@code memory}=进程内环形缓冲；{@code influx}=InfluxDB */
+    private String querySource;
+
     private String deviceId;
     private String deviceCode;
     private String deviceName;

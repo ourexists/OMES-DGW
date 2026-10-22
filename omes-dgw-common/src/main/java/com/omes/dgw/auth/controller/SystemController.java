@@ -41,18 +41,34 @@ public class SystemController {
         return Result.ok(users);
     }
 
-    @Operation(summary = "门户运行时信息（mode / collectEnabled）")
+    @Operation(summary = "门户运行时信息（含历史/指标查询模式，供前端双模式展示）")
     @GetMapping("/portal")
     public Result<Map<String, Object>> portal() {
         PortalMode mode = PortalMode.from(
                 appProperties.getPortal() != null ? appProperties.getPortal().getMode() : null);
+        var collect = appProperties.getCollect();
+        String monitorType = collect != null ? collect.getMonitorType() : "none";
+        boolean influxMonitor = "influxdb".equalsIgnoreCase(monitorType);
+        boolean historyEnabled = collect != null && collect.getHistory() != null && collect.getHistory().isEnabled();
+        boolean metricsPersist = collect != null && collect.getMetrics() != null
+                && collect.getMetrics().isPersistToInflux();
+        int metricsHistoryMinutes = collect != null && collect.getMetrics() != null
+                ? Math.max(1, collect.getMetrics().getHistoryMinutes()) : 60;
+        int sampleIntervalSec = collect != null && collect.getMetrics() != null
+                ? Math.max(1, collect.getMetrics().getSampleIntervalSec()) : 10;
+
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("mode", mode.name().toLowerCase());
-        body.put("collectEnabled", appProperties.getCollect() != null && appProperties.getCollect().isEnabled());
-        body.put("storeBackend", appProperties.getCollect() != null
-                ? appProperties.getCollect().getStoreBackend() : "caffeine");
-        body.put("monitorType", appProperties.getCollect() != null
-                ? appProperties.getCollect().getMonitorType() : "none");
+        body.put("collectEnabled", collect != null && collect.isEnabled());
+        body.put("storeBackend", collect != null ? collect.getStoreBackend() : "caffeine");
+        body.put("monitorType", monitorType);
+        body.put("historyEnabled", historyEnabled);
+        body.put("metricsPersistToInflux", metricsPersist);
+        body.put("metricsHistoryMinutes", metricsHistoryMinutes);
+        body.put("metricsSampleIntervalSec", sampleIntervalSec);
+        // 点位历史曲线：仅 Influx；性能指标：Influx 或进程内环形缓冲
+        body.put("pointHistoryMode", (influxMonitor && historyEnabled) ? "influx" : "unavailable");
+        body.put("collectMetricsMode", (influxMonitor && metricsPersist) ? "influx" : "memory");
         return Result.ok(body);
     }
 }

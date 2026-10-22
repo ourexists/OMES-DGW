@@ -286,10 +286,9 @@ const navItems = computed(() => {
     ...metaMap['monitor-collect'],
     fieldCount: 0
   }
+  // 仅中控有 cache-flush；盒子无 Influx，不展示监控采集分区
   if (cacheIdx >= 0) {
     items.splice(cacheIdx + 1, 0, monitor)
-  } else {
-    items.push(monitor)
   }
   return items
 })
@@ -322,7 +321,7 @@ onMounted(loadSections)
 
 <style scoped>
 .settings-page {
-  max-width: 1180px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   height: 100%;

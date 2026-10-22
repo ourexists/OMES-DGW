@@ -10,7 +10,7 @@
     </parent>
     <artifactId>omes-dgw-portal-box</artifactId>
     <name>omes-dgw-portal-box</name>
-    <description>边缘盒子门户：Caffeine 内存，无协议采集；前端内嵌同 JAR，不前后端分离</description>
+    <description>边缘盒子门户：协议采集 + Caffeine 实时；不落 Influx；前端内嵌同 JAR</description>
 
     <properties>
         <!-- -Dskip.frontend=true 跳过 npm 构建（仅后端联调） -->
@@ -24,6 +24,10 @@
         <dependency>
             <groupId>com.omes.dgw</groupId>
             <artifactId>omes-dgw-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.omes.dgw</groupId>
+            <artifactId>omes-dgw-collect</artifactId>
         </dependency>
         <dependency>
             <groupId>com.omes.dgw</groupId>

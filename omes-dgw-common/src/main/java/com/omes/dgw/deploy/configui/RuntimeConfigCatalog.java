@@ -18,8 +18,8 @@ import static com.omes.dgw.deploy.configui.ConfigFieldDef.string;
  * <b>默认值以各门户 {@code application.yml} 为准</b>，本类 defaultValue 仅作
  * UI 回退展示；现场覆盖写入各门户 {@code config/config-box.properties} 或 {@code config/config-center.properties}。
  * <ul>
- *   <li>边缘盒子 {@link PortalMode#BOX}：台账/诊断/状态；无 Redis/Influx/采集调度分区</li>
- *   <li>中控 {@link PortalMode#CENTER}：完整分区（含 Redis、Influx、采集运行）</li>
+ *   <li>边缘盒子 {@link PortalMode#BOX}：协议采集 + 台账；无 Redis/Influx 分区</li>
+ *   <li>中控 {@link PortalMode#CENTER}：协议采集 + Redis + Influx</li>
  * </ul>
  */
 public final class RuntimeConfigCatalog {
@@ -30,11 +30,12 @@ public final class RuntimeConfigCatalog {
     public static List<ConfigSectionDef> all(PortalMode mode) {
         PortalMode m = mode == null ? PortalMode.BOX : mode;
         if (m.isBox()) {
-            // 盒子无采集/无 Redis/Influx：仅台账库、内存诊断、在线事件
+            // 盒子有协议采集；实时 Caffeine；不落 Influx / 无 Redis
             return List.of(
                     dataStore(),
-                    boxObservability(),
-                    boxStatusControl()
+                    collectRuntime(),
+                    observability(),
+                    statusControl()
             );
         }
         return List.of(
@@ -76,7 +77,7 @@ public final class RuntimeConfigCatalog {
         return new ConfigSectionDef(
                 "collect-runtime",
                 "采集运行",
-                "调度、连接熔断、协议轮询与离线判定（中控门户 yml 默认；盒子不展示）",
+                "调度、连接熔断、协议轮询与离线判定（默认见各门户 application.yml）",
                 "builtin",
                 concat(
                         List.of(
@@ -129,40 +130,6 @@ public final class RuntimeConfigCatalog {
                                 integer("COLLECT_OFFLINE_SCHEDULER_POOL_SIZE", "检测线程池大小", "8", null)
                                         .withGroup("离线检测")
                         )
-                )
-        );
-    }
-
-    private static ConfigSectionDef boxObservability() {
-        return new ConfigSectionDef(
-                "observability",
-                "运维诊断",
-                "边缘盒子仅保留 JVM 内存诊断",
-                "builtin",
-                List.of(
-                        bool("COLLECT_DIAGNOSTICS_MEMORY_LOG", "定期输出 JVM 内存", "true", null)
-                                .withGroup("内存诊断"),
-                        integer("COLLECT_DIAGNOSTICS_MEMORY_LOG_INTERVAL_SEC", "内存日志间隔(秒)", "300", null)
-                                .withGroup("内存诊断")
-                )
-        );
-    }
-
-    private static ConfigSectionDef boxStatusControl() {
-        return new ConfigSectionDef(
-                "status-control",
-                "状态与控制",
-                "在线/离线事件写入 SQLite（盒子不写控制点）",
-                "builtin",
-                List.of(
-                        bool("COLLECT_ONLINE_EVENT_ENABLED", "启用在线事件", "true", null)
-                                .withGroup("在线事件"),
-                        integer("COLLECT_ONLINE_EVENT_BATCH_SIZE", "批量写入条数", "100", null)
-                                .withGroup("在线事件"),
-                        integer("COLLECT_ONLINE_EVENT_FLUSH_INTERVAL_SEC", "定时刷写间隔(秒)", "30", null)
-                                .withGroup("在线事件"),
-                        integer("COLLECT_ONLINE_EVENT_MAX_QUEUE_SIZE", "队列最大长度", "10000", null)
-                                .withGroup("在线事件")
                 )
         );
     }

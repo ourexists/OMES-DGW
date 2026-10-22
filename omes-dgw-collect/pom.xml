@@ -12,7 +12,7 @@
 
     <artifactId>omes-dgw-collect</artifactId>
     <name>omes-dgw-collect</name>
-    <description>中控采集：protocol + metrics + modscan + collectlog（PLC4X / s7connector）</description>
+    <description>协议采集：protocol + metrics + modscan + collectlog（盒子/中控共用；落库由门户 store 决定）</description>
 
     <dependencies>
         <dependency>

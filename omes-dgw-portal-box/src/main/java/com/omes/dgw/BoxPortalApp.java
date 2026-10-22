@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * 边缘盒子门户：Caffeine 实时缓存，不做协议采集（{@code app.collect.enabled=false}）。
+ * 边缘盒子门户：与中控相同的协议采集；实时缓存用 Caffeine；不写 Influx（无历史落库）。
  */
 @SpringBootApplication(
         scanBasePackages = "com.omes.dgw",
