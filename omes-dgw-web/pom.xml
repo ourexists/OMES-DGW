@@ -12,6 +12,6 @@
 
     <artifactId>omes-dgw-web</artifactId>
     <name>omes-dgw-web</name>
-    <description>OMES设备软边缘网关 - 管理前端（Vue + Vite）</description>
+    <description>管理前端（Vue + Vite）。盒子门户打包时以 build:box 内嵌；中控可独立 Nginx 部署</description>
     <packaging>pom</packaging>
 </project>

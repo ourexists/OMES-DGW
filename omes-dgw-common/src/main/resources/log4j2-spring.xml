@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="60">
+    <Properties>
+        <Property name="LOG_PATH">${sys:LOG_PATH:-logs}</Property>
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n%xEx</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${LOG_PATTERN}" charset="UTF-8"/>
+        </Console>
+        <!-- 甯歌鏃ュ織锛欴EBUG锝濿ARN锛屼笉鍚?ERROR -->
+        <RollingFile name="RollingFile"
+                     fileName="${LOG_PATH}/omes-dgw-server.log"
+                     filePattern="${LOG_PATH}/omes-dgw-server-%d{yyyy-MM-dd}-%i.log.gz">
+            <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="NEUTRAL"/>
+            <PatternLayout pattern="${LOG_PATTERN}" charset="UTF-8"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="50 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="14"/>
+        </RollingFile>
+        <!-- ERROR 鍙婁互涓婂崟鐙惤鐩?-->
+        <RollingFile name="ErrorRollingFile"
+                     fileName="${LOG_PATH}/omes-dgw-server-error.log"
+                     filePattern="${LOG_PATH}/omes-dgw-server-error-%d{yyyy-MM-dd}-%i.log.gz">
+            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="${LOG_PATTERN}" charset="UTF-8"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="50 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="30"/>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="com.omes.dgw" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+            <AppenderRef ref="ErrorRollingFile"/>
+        </Logger>
+        <Logger name="com.omes.dgw.device.cache" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+            <AppenderRef ref="ErrorRollingFile"/>
+        </Logger>
+        <Logger name="com.omes.dgw.protocol" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+            <AppenderRef ref="ErrorRollingFile"/>
+        </Logger>
+        <!-- 閲囬泦缁撴瀯鍖栬瘖鏂細event=poll_round / point_value_lost / plc_tag_response / jvm_memory -->
+        <Logger name="com.omes.dgw.collectlog" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+            <AppenderRef ref="ErrorRollingFile"/>
+        </Logger>
+<!--        &lt;!&ndash; Modbus 鍧楄璋冭瘯锛坮eadChunk 绛?log.debug锛夛紱鐢熶骇鍙敼涓?info &ndash;&gt;-->
+<!--        <Logger name="com.omes.dgw.protocol.ModbusTcpPollingProtocolManager" level="debug" additivity="false">-->
+<!--            <AppenderRef ref="Console"/>-->
+<!--            <AppenderRef ref="RollingFile"/>-->
+<!--            <AppenderRef ref="ErrorRollingFile"/>-->
+<!--        </Logger>-->
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+            <AppenderRef ref="ErrorRollingFile"/>
+        </Root>
+    </Loggers>
+</Configuration>

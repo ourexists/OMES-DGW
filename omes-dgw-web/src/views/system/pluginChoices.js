@@ -1,11 +1,11 @@
-// 插件选择入口；新增实现时同步接入 StorePluginPanel 和服务端插件接口。
+// 存储后端选择（编译期 store 模块；由门户决定默认值）
 export const pluginChoices = {
   'cache-flush': [
-    { value: 'caffeine', label: 'Caffeine 本地缓存', description: '内置缓存与本地队列，无需安装插件' },
-    { value: 'redis', label: 'Redis 缓存与刷数', description: '通过 Redis 插件提供实时缓存与指标选主', pluginType: 'redis' }
+    { value: 'caffeine', label: 'Caffeine（进程内）', description: '边缘盒子默认；无需外部缓存' },
+    { value: 'redis', label: 'Redis', description: '中控电脑；实时缓存' }
   ],
   'monitor-collect': [
-    { value: 'none', label: '无', description: '默认不启用采集监控存储' },
-    { value: 'influxdb', label: 'Influxdb', description: '存储采集历史与运行指标，需安装插件', pluginType: 'influx' }
+    { value: 'none', label: '无', description: '不写时序历史（边缘盒子）' },
+    { value: 'influxdb', label: 'InfluxDB', description: '中控电脑；快照历史与协议指标' }
   ]
 }

@@ -12,7 +12,8 @@ function Get-CollectImageArtifacts {
         FrontVersion   = $fv
         BackendTag     = "omes-dgw-server:$bv"
         FrontTag       = "omes-dgw-web:$fv"
-        BackendJar     = "omes-dgw-server-$bv-exec.jar"
+        # 实施包默认打中控门户；边缘盒子改用 omes-dgw-portal-box-*.jar 并改 JAR_FILE
+        BackendJar     = "omes-dgw-portal-center-$bv.jar"
         BackendTar     = "omes-dgw-server-$bv.tar"
         FrontTar       = "omes-dgw-web-$fv.tar"
         InfluxTag      = $script:CollectInfluxTag

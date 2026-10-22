@@ -97,13 +97,9 @@ const handleLogin = () => {
     loading.value = true
     try {
       await userStore.login(formState.username, formState.password)
-      const firstMenuPath = userStore.getFirstMenuPath()
-      if (!firstMenuPath) {
-        throw new Error('未配置菜单权限')
-      }
       setupDynamicRoutes(userStore.menus)
       message.success('登录成功')
-      router.push(firstMenuPath)
+      router.push(userStore.getFirstMenuPath())
     } catch (error) {
       message.error(error.message || '登录失败')
     } finally {

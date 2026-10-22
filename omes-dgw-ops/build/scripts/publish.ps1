@@ -44,12 +44,19 @@ New-Item -ItemType Directory -Force -Path `
     (Join-Path $TemplatesDir "nginx"), `
     (Join-Path $TemplatesDir "omes-dgw\monitoring") | Out-Null
 
-Copy-Item (Join-Path $RepoRoot "omes-dgw-server\config\config.properties") `
+Copy-Item (Join-Path $RepoRoot "config\config-box.properties") `
+    (Join-Path $TemplatesDir "omes-dgw\config\") -Force
+Copy-Item (Join-Path $RepoRoot "config\config-center.properties") `
+    (Join-Path $TemplatesDir "omes-dgw\config\") -Force
+Copy-Item (Join-Path $RepoRoot "config\README.md") `
     (Join-Path $TemplatesDir "omes-dgw\config\") -Force
 Copy-Item (Join-Path $RepoRoot "omes-dgw-web\nginx\default.conf") `
     (Join-Path $TemplatesDir "nginx\") -Force
-Copy-Item -Recurse -Force (Join-Path $RepoRoot "omes-dgw-server\monitoring\*") `
-    (Join-Path $TemplatesDir "omes-dgw\monitoring")
+$monitoringSrc = Join-Path $RepoRoot "monitoring"
+if (Test-Path $monitoringSrc) {
+    Copy-Item -Recurse -Force (Join-Path $monitoringSrc "*") `
+        (Join-Path $TemplatesDir "omes-dgw\monitoring")
+}
 
 $deployEnv = Join-Path $DeployTemplate ".env"
 $releaseEnv = Join-Path $ReleaseDir ".env"

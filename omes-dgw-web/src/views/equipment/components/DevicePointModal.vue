@@ -81,20 +81,22 @@
     @ok="handleSubmitPoint"
     @cancel="handleCancelPoint"
   >
-    <a-form layout="vertical" :model="pointForm" ref="pointFormRef">
-      <a-row :gutter="16">
-        <a-col :span="12">
-          <a-form-item label="点位编码" required>
-            <a-input v-model:value="pointForm.code" placeholder="请输入点位编码" />
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
-          <a-form-item label="点位名称" required>
-            <a-input v-model:value="pointForm.name" placeholder="请输入点位名称" />
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
-          <a-form-item label="读写权限" required>
+    <a-form class="edit-form" layout="vertical" :model="pointForm" ref="pointFormRef">
+      <section class="edit-section">
+        <h4 class="edit-section__title">基本信息</h4>
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="点位编码" required>
+              <a-input v-model:value="pointForm.code" placeholder="请输入点位编码" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="点位名称" required>
+              <a-input v-model:value="pointForm.name" placeholder="请输入点位名称" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="读写权限" required>
             <a-select
               v-model:value="pointForm.accessType"
               :options="accessTypeOptions"
@@ -102,20 +104,30 @@
               placeholder="请选择读写权限"
               @change="handleAccessTypeChange"
             />
-          </a-form-item>
-        </a-col>
-        <a-col v-if="requiresActualAddress" :span="12">
-          <a-form-item label="实际值点位" required>
-            <a-input v-model:value="pointForm.actualAddress" :placeholder="pointAddressPlaceholder" />
-          </a-form-item>
-        </a-col>
-        <a-col v-if="requiresSetpointAddress" :span="12">
-          <a-form-item label="设定值点位" required>
-            <a-input v-model:value="pointForm.setpointAddress" :placeholder="pointAddressPlaceholder" />
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
-          <a-form-item label="数据类型" required>
+            </a-form-item>
+          </a-col>
+        </a-row>
+      </section>
+      <section v-if="requiresActualAddress || requiresSetpointAddress" class="edit-section">
+        <h4 class="edit-section__title">点位地址</h4>
+        <a-row :gutter="16">
+          <a-col v-if="requiresActualAddress" :span="12">
+            <a-form-item label="实际值点位" required>
+              <a-input v-model:value="pointForm.actualAddress" :placeholder="pointAddressPlaceholder" />
+            </a-form-item>
+          </a-col>
+          <a-col v-if="requiresSetpointAddress" :span="12">
+            <a-form-item label="设定值点位" required>
+              <a-input v-model:value="pointForm.setpointAddress" :placeholder="pointAddressPlaceholder" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+      </section>
+      <section class="edit-section">
+        <h4 class="edit-section__title">数值处理</h4>
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="数据类型" required>
             <a-select
               v-model:value="pointForm.dataType"
               :options="dataTypeOptions"
@@ -126,10 +138,10 @@
               option-filter-prop="label"
               @change="handlePointDataTypeChange"
             />
-          </a-form-item>
-        </a-col>
-        <a-col v-if="currentDataTypeSupportsByteOrder" :span="12">
-          <a-form-item label="字节序" required>
+            </a-form-item>
+          </a-col>
+          <a-col v-if="currentDataTypeSupportsByteOrder" :span="12">
+            <a-form-item label="字节序" required>
             <a-select
               v-model:value="pointForm.byteOrder"
               :options="byteOrderOptions"
@@ -139,51 +151,51 @@
               placeholder="请选择字节序"
               option-filter-prop="label"
             />
-          </a-form-item>
-        </a-col>
-        <a-col v-if="currentDataTypeSupportsScaleFactor" :span="12">
-          <a-form-item label="缩放系数" required>
-            <a-input-number v-model:value="pointForm.scaleFactor" style="width: 100%" placeholder="请输入缩放系数" />
-          </a-form-item>
-        </a-col>
-        <a-col v-if="currentDataTypeSupportsEngRange" :span="12">
-          <a-form-item label="工程值最小值" extra="可选，不填则读写不限制">
-            <a-input-number v-model:value="pointForm.engValueMin" style="width: 100%" placeholder="可选，不填则不限制" />
-          </a-form-item>
-        </a-col>
-        <a-col v-if="currentDataTypeSupportsEngRange" :span="12">
-          <a-form-item label="工程值最大值">
-            <a-input-number v-model:value="pointForm.engValueMax" style="width: 100%" placeholder="可选，不填则不限制" />
-          </a-form-item>
-        </a-col>
-        <a-col v-if="currentDataTypeSupportsEngRange" :span="12">
-          <a-form-item label="工程单位">
-            <a-input v-model:value="pointForm.engUnit" placeholder="请输入工程单位" />
-          </a-form-item>
-        </a-col>
-        <a-col v-if="currentDataTypeSupportsDecimalPlaces" :span="12">
-          <a-form-item label="小数位数" required>
-            <a-input-number v-model:value="pointForm.decimalPlaces" :min="0" :max="10" style="width: 100%" placeholder="请输入小数位数" />
-          </a-form-item>
-        </a-col>
-        <a-col v-if="currentDataTypeSupportsBcdConvert" :span="12">
-          <a-form-item
-            label="BCD转码"
-            required
-            extra="Packed BCD：整字如 0x1234→1234。与位域 BA/DC 组合时先拆分再转码（如 0x1230：BA→30、DC→12）"
-          >
+            </a-form-item>
+          </a-col>
+          <a-col v-if="currentDataTypeSupportsScaleFactor" :span="12">
+            <a-form-item label="缩放系数" required>
+              <a-input-number v-model:value="pointForm.scaleFactor" style="width: 100%" placeholder="请输入缩放系数" />
+            </a-form-item>
+          </a-col>
+          <a-col v-if="currentDataTypeSupportsEngRange" :span="12">
+            <a-form-item label="工程值最小值" extra="可选，不填则读写不限制">
+              <a-input-number v-model:value="pointForm.engValueMin" style="width: 100%" placeholder="可选，不填则不限制" />
+            </a-form-item>
+          </a-col>
+          <a-col v-if="currentDataTypeSupportsEngRange" :span="12">
+            <a-form-item label="工程值最大值">
+              <a-input-number v-model:value="pointForm.engValueMax" style="width: 100%" placeholder="可选，不填则不限制" />
+            </a-form-item>
+          </a-col>
+          <a-col v-if="currentDataTypeSupportsEngRange" :span="12">
+            <a-form-item label="工程单位">
+              <a-input v-model:value="pointForm.engUnit" placeholder="请输入工程单位" />
+            </a-form-item>
+          </a-col>
+          <a-col v-if="currentDataTypeSupportsDecimalPlaces" :span="12">
+            <a-form-item label="小数位数" required>
+              <a-input-number v-model:value="pointForm.decimalPlaces" :min="0" :max="10" style="width: 100%" placeholder="请输入小数位数" />
+            </a-form-item>
+          </a-col>
+          <a-col v-if="currentDataTypeSupportsBcdConvert" :span="12">
+            <a-form-item
+              label="BCD转码"
+              required
+              extra="Packed BCD：整字如 0x1234→1234。与位域 BA/DC 组合时先拆分再转码（如 0x1230：BA→30、DC→12）"
+            >
             <a-select
               v-model:value="pointForm.bcdConvert"
               :options="bcdOptions"
               placeholder="请选择是否转码"
             />
-          </a-form-item>
-        </a-col>
-        <a-col v-if="currentDataTypeSupportsBitField" :span="12">
-          <a-form-item
-            label="位域"
-            extra="直接选 A/B/C/D（各4bit）或 BA/DC（各8bit，AB/CD 同义）。同一地址可配多个点位"
-          >
+            </a-form-item>
+          </a-col>
+          <a-col v-if="currentDataTypeSupportsBitField" :span="12">
+            <a-form-item
+              label="位域"
+              extra="直接选 A/B/C/D（各4bit）或 BA/DC（各8bit，AB/CD 同义）。同一地址可配多个点位"
+            >
             <a-select
               v-model:value="pointForm.bitField"
               :options="bitFieldOptions"
@@ -192,9 +204,10 @@
               placeholder="如 A、BA、DC"
               style="width: 100%"
             />
-          </a-form-item>
-        </a-col>
-      </a-row>
+            </a-form-item>
+          </a-col>
+        </a-row>
+      </section>
     </a-form>
   </a-modal>
 
@@ -470,7 +483,13 @@ const isFinsDevice = computed(() => deviceProtocol.value === 'FINS_TCP')
 
 const isSlmpDevice = computed(() => deviceProtocol.value === 'SLMP_TCP')
 
+const isS7Device = computed(() => deviceProtocol.value === 'S7_TCP')
+
+const isOpcUaDevice = computed(() => deviceProtocol.value === 'OPC_UA')
+
 const pointAddressPlaceholder = computed(() => {
+  if (isOpcUaDevice.value) return '例如 ns=2;s=Channel.Device.Tag 或 ns=2;i=1001'
+  if (isS7Device.value) return '例如 DB1.DBD0、DB1.DBX0.0、VW100、M0.0'
   if (isSlmpDevice.value) return '例如 D100、M100、X10、Y20、D100.5'
   if (isFinsDevice.value) return '例如 D100、D100.05、CIO100'
   if (isModbusDevice.value) return '例如 40001、10001'
@@ -478,6 +497,12 @@ const pointAddressPlaceholder = computed(() => {
 })
 
 const pointImportAddressTip = computed(() => {
+  if (isOpcUaDevice.value) {
+    return 'OPC UA 地址为节点 ID：ns=2;s=Channel.Device.Tag（字符串）或 ns=2;i=1001（数字）'
+  }
+  if (isS7Device.value) {
+    return 'S7 地址示例：DB1.DBD0（数据块双字）、DB1.DBX0.0（位）、VW100 / VD100（S7-200 V 区）、IB0 / QB0 / M0.0。字节序固定为大端'
+  }
   if (isSlmpDevice.value) {
     return 'SLMP 地址示例：D100（数据寄存器）、M100（内部继电器）、X10/Y20（八进制 I/O）、D100.5（字内位）；多字类型需填字节序'
   }
@@ -491,6 +516,12 @@ const pointImportAddressTip = computed(() => {
 })
 
 const pointImportPlaceholder = computed(() => {
+  if (isOpcUaDevice.value) {
+    return '在此 Ctrl+V 粘贴 Excel 数据（无需表头），例如：\nTEMP_01\t温度1\t只读\tns=2;s=Channel.Device.Temp\t\tReal\t\t1\t0\t100\t℃\t1\t'
+  }
+  if (isS7Device.value) {
+    return '在此 Ctrl+V 粘贴 Excel 数据（无需表头），例如：\nTEMP_01\t温度1\t只读\tDB1.DBD0\t\tReal\t\t1\t0\t100\t℃\t1\t'
+  }
   if (isSlmpDevice.value) {
     return '在此 Ctrl+V 粘贴 Excel 数据（无需表头），例如：\nTEMP_01\t温度1\t只读\tD100\t\tReal\tCDAB\t1\t0\t100\t℃\t1\t'
   }

@@ -48,9 +48,10 @@ services:
       APP_DEPLOY_RESTART_SUPERVISED: "true"
       LOG_PATH: /app/logs
       CORS_ALLOWED_ORIGIN_PATTERNS: ${CORS_ALLOWED_ORIGIN_PATTERNS:-http://localhost:*,http://127.0.0.1:*}
-      SQLITE_PATH: ${SQLITE_PATH:-/app/data/omes-dgw.db}
+      DEPLOY_CONFIG_FILE: ${DEPLOY_CONFIG_FILE:-config/config-center.properties}
+      SQLITE_PATH: ${SQLITE_PATH:-/app/data/omes-dgw-center.db}
       FLYWAY_ENABLED: ${FLYWAY_ENABLED:-true}
-      COLLECT_MONITOR_TYPE: ${COLLECT_MONITOR_TYPE:-none}
+      COLLECT_MONITOR_TYPE: ${COLLECT_MONITOR_TYPE:-influxdb}
       INFLUX_URL: ${INFLUX_URL:-http://host.docker.internal:8086}
       INFLUX_TOKEN: ${INFLUX_ADMIN_TOKEN:-collect-dev-influx-token-change-me}
       INFLUX_ORG: ${INFLUX_ORG:-omes}

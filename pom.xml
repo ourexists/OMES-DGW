@@ -34,10 +34,13 @@
     </scm>
 
     <modules>
-        <module>omes-dgw-plugin-api</module>
-        <module>omes-dgw-server</module>
-        <module>omes-dgw-plugin-redis</module>
-        <module>omes-dgw-plugin-influx</module>
+        <module>omes-dgw-common</module>
+        <module>omes-dgw-collect</module>
+        <module>omes-dgw-store-memory</module>
+        <module>omes-dgw-store-redis</module>
+        <module>omes-dgw-store-influx</module>
+        <module>omes-dgw-portal-box</module>
+        <module>omes-dgw-portal-center</module>
         <module>omes-dgw-web</module>
         <module>omes-dgw-ops</module>
     </modules>
@@ -54,29 +57,47 @@
         <easypoi.version>4.5.0</easypoi.version>
         <!-- Maven Central 最新稳定版；0.14.0 尚未发布 -->
         <plc4x.version>0.13.1</plc4x.version>
-        <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+        <s7connector.version>2.1</s7connector.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <!-- 内部模块 -->
             <dependency>
                 <groupId>com.omes.dgw</groupId>
-                <artifactId>omes-dgw-server</artifactId>
+                <artifactId>omes-dgw-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.omes.dgw</groupId>
-                <artifactId>omes-dgw-plugin-redis</artifactId>
+                <artifactId>omes-dgw-collect</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.omes.dgw</groupId>
-                <artifactId>omes-dgw-plugin-influx</artifactId>
+                <artifactId>omes-dgw-store-memory</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.omes.dgw</groupId>
+                <artifactId>omes-dgw-store-redis</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.omes.dgw</groupId>
+                <artifactId>omes-dgw-store-influx</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.omes.dgw</groupId>
+                <artifactId>omes-dgw-portal-box</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.omes.dgw</groupId>
+                <artifactId>omes-dgw-portal-center</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
-            <!-- 第三方（Boot BOM 未管理或需锁定版本） -->
             <dependency>
                 <groupId>com.influxdb</groupId>
                 <artifactId>influxdb-client-java</artifactId>
@@ -133,6 +154,16 @@
                 <version>${plc4x.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.plc4x</groupId>
+                <artifactId>plc4j-driver-opcua</artifactId>
+                <version>${plc4x.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.s7connector</groupId>
+                <artifactId>s7connector</artifactId>
+                <version>${s7connector.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>cn.afterturn</groupId>
                 <artifactId>easypoi-spring-boot-starter</artifactId>
                 <version>${easypoi.version}</version>
@@ -146,11 +177,6 @@
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-shade-plugin</artifactId>
-                    <version>${maven-shade-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

@@ -37,11 +37,17 @@ if (Test-Path $nginxTpl) {
     $nginxSynced = $true
 }
 
-$configTpl = Join-Path $TemplatesDir "omes-dgw\config\config.properties"
-$configDst = Join-Path $mountPath "omes-dgw\config\config.properties"
-if (-not (Test-Path $configDst) -and (Test-Path $configTpl)) {
-    Copy-Item $configTpl $configDst
+# 实施包默认中控门户；边缘盒子可另拷 config-box.properties
+$configDir = Join-Path $mountPath "omes-dgw\config"
+New-Item -ItemType Directory -Force -Path $configDir | Out-Null
+foreach ($name in @("config-center.properties", "config-box.properties", "README.md")) {
+    $tpl = Join-Path $TemplatesDir "omes-dgw\config\$name"
+    $dst = Join-Path $configDir $name
+    if ((Test-Path $tpl) -and (-not (Test-Path $dst))) {
+        Copy-Item $tpl $dst
+    }
 }
+$configDst = Join-Path $configDir "config-center.properties"
 if (Test-Path $configDst) {
     Sync-DeployConfigProperties $configDst
 }

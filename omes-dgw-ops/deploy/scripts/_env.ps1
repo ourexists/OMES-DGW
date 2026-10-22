@@ -88,5 +88,5 @@ function Sync-DeployConfigProperties {
         }
     }
     Set-Content -LiteralPath $ConfigPath -Value $out -Encoding UTF8
-    Write-Host "[up] Synced config.properties from .env: $ConfigPath"
+    Write-Host "[up] Synced portal config from .env: $ConfigPath"
 }

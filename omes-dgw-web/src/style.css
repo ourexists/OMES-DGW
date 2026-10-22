@@ -110,6 +110,56 @@ body,
   overflow-y: auto !important;
 }
 
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.edit-section {
+  background: var(--omes-color-bg-layout);
+  border: 1px solid var(--omes-color-border-secondary);
+  border-radius: var(--omes-radius-md);
+  padding: 12px 16px 2px;
+}
+
+.edit-form .ant-input:not([disabled]),
+.edit-form textarea.ant-input:not([disabled]),
+.edit-form .ant-input-affix-wrapper:not(.ant-input-affix-wrapper-disabled),
+.edit-form .ant-input-number:not(.ant-input-number-disabled),
+.edit-form .ant-select:not(.ant-select-disabled) .ant-select-selector {
+  background: var(--omes-color-bg-container);
+}
+
+.edit-section__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: var(--omes-font-weight-semibold);
+  line-height: 20px;
+  color: var(--omes-color-text-heading);
+}
+
+.edit-section__title::before {
+  content: "";
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--omes-color-primary);
+  flex-shrink: 0;
+}
+
+.edit-form .ant-form-item {
+  margin-bottom: 14px;
+}
+
+.edit-form .ant-form-item-extra {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 @media screen and (max-width: 1280px) {
   .page-container {
     padding: 16px;

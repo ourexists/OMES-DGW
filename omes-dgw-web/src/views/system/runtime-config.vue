@@ -3,7 +3,7 @@
     <div class="page-hero">
       <div class="page-hero__text">
         <h2>系统配置</h2>
-        <p>管理运行参数与扩展插件。</p>
+        <p>管理运行参数与存储连接配置。</p>
       </div>
       <a-space>
       <a-button :loading="loading" :disabled="restarting" @click="refreshAll">
@@ -47,7 +47,7 @@
               <h3>{{ currentNav?.title }}</h3>
             </div>
             <a-tag v-if="currentNav?.fieldCount" color="blue">{{ currentNav.fieldCount }} 项</a-tag>
-            <a-tag v-else color="purple">插件</a-tag>
+            <a-tag v-else color="blue">连接</a-tag>
           </div>
 
           <div class="settings-panel__body">
@@ -64,8 +64,12 @@
                     <PluginChoiceCards v-model="values[field.key]" :label="field.label" :options="cacheChoices(field)" />
                   </template>
                   <template #before-footer="{ values }">
-                    <div v-if="cachePluginType(values.COLLECT_STORE_BACKEND)" class="backend-details">
-                      <StorePluginPanel v-if="cachePluginType(values.COLLECT_STORE_BACKEND)" ref="redisPluginRef" :types="[cachePluginType(values.COLLECT_STORE_BACKEND)]" />
+                    <div v-if="values.COLLECT_STORE_BACKEND === 'redis'" class="backend-details">
+                      <ConfigSectionForm
+                        section-id="plugin-redis"
+                        compact
+                        hide-description
+                      />
                     </div>
                   </template>
                 </ConfigSectionForm>
@@ -78,19 +82,22 @@
                 :visible-keys="['COLLECT_MONITOR_TYPE']"
                 compact
                 hide-description
-                @saved="monitorPluginRef?.reload?.()"
               >
-                <template #field="{ values }">
+                <template #field="{ field, values }">
                   <PluginChoiceCards
-                    :model-value="values.COLLECT_MONITOR_TYPE"
-                    label="采集监控类型"
+                    v-model="values[field.key]"
+                    :label="field.label"
                     :options="pluginChoices['monitor-collect']"
-                    @update:model-value="values.COLLECT_MONITOR_TYPE = $event"
                   />
                 </template>
                 <template #before-footer="{ values }">
-                  <div v-if="monitorEnabled(values)" class="backend-details">
-                    <StorePluginPanel v-if="monitorEnabled(values)" ref="monitorPluginRef" :types="['influx']" @config-saved="formRef?.reload?.()" />
+                  <div v-if="values.COLLECT_MONITOR_TYPE === 'influxdb'" class="backend-details">
+                    <ConfigSectionForm
+                      section-id="plugin-influx"
+                      :visible-groups="['连接管理', '历史落库', '指标落库']"
+                      compact
+                      hide-description
+                    />
                   </div>
                 </template>
               </ConfigSectionForm>
@@ -126,7 +133,6 @@ import {
 } from '@ant-design/icons-vue'
 import { listRuntimeConfigSections, restartSystem, getSystemRestartStatus } from '@/api/system'
 import ConfigSectionForm from './components/ConfigSectionForm.vue'
-import StorePluginPanel from './components/StorePluginPanel.vue'
 import PluginChoiceCards from './components/PluginChoiceCards.vue'
 import { pluginChoices } from './pluginChoices'
 
@@ -207,13 +213,10 @@ onUnmounted(() => {
 const sections = ref([])
 const activeTab = ref('')
 const formRef = ref(null)
-const redisPluginRef = ref(null)
-const monitorPluginRef = ref(null)
 const monitorEnabled = values => values.COLLECT_MONITOR_TYPE === 'influxdb'
 const cacheChoices = field => (field.options || []).map(value =>
   pluginChoices['cache-flush'].find(option => option.value === value) || { value, label: value, description: '' }
 )
-const cachePluginType = value => pluginChoices['cache-flush'].find(option => option.value === value)?.pluginType
 
 const metaMap = {
   'data-store': {
@@ -226,14 +229,14 @@ const metaMap = {
     icon: ThunderboltOutlined,
     iconBg: 'rgba(220, 38, 38, 0.1)',
     iconColor: '#dc2626',
-    shortDesc: '存储后端与插件管理',
+    shortDesc: '缓存后端与 Redis 连接',
     description: '选择实时缓存后端，安装和配置对应插件，保存后在线生效。采集队列由主服务持有。'
   },
   'monitor-collect': {
     icon: CloudServerOutlined,
     iconBg: 'rgba(22, 119, 255, 0.1)',
     iconColor: '#1677ff',
-    shortDesc: '采集存储与插件管理',
+    shortDesc: 'Influx 连接与落库',
     title: '监控采集',
     description: '选择监控采集插件，管理安装、连接与落库配置。',
     synthetic: true
@@ -312,8 +315,6 @@ const loadSections = async () => {
 const refreshAll = async () => {
   await loadSections()
   formRef.value?.reload?.()
-  redisPluginRef.value?.reload?.()
-  monitorPluginRef.value?.reload?.()
 }
 
 onMounted(loadSections)

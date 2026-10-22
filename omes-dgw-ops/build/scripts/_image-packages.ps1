@@ -49,14 +49,14 @@ function Export-BackendImage {
         $jarFile = $artifacts.BackendJar
     }
     else {
-        $bareName = "omes-dgw-server-$($artifacts.BackendVersion)"
-        $barePath = Join-Path $layout.PackagesDir $bareName
+        $bareName = "omes-dgw-portal-center-$($artifacts.BackendVersion)"
+        $barePath = Join-Path $layout.PackagesDir "$bareName.jar"
         if (Test-Path $barePath -PathType Leaf) {
             Copy-Item -Path $barePath -Destination $jarSrc -Force
             $jarFile = $artifacts.BackendJar
         }
         else {
-            $candidates = Get-ChildItem -Path $layout.PackagesDir -Filter "omes-dgw-server*.jar" -File -ErrorAction SilentlyContinue
+            $candidates = Get-ChildItem -Path $layout.PackagesDir -Filter "omes-dgw-portal-*.jar" -File -ErrorAction SilentlyContinue
             if ($candidates.Count -eq 1) {
                 $jarFile = $candidates[0].Name
             }

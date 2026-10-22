@@ -4,13 +4,13 @@
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-ARG JAR_FILE=omes-dgw-server-1.0-SNAPSHOT-exec.jar
+ARG JAR_FILE=omes-dgw-portal-center-1.0-SNAPSHOT.jar
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system app && useradd --system --gid app app \
-    && mkdir -p /app/config /app/monitoring /app/logs /app/data /app/plugins \
+    && mkdir -p /app/config /app/monitoring /app/logs /app/data \
     && chown -R app:app /app
 
 COPY ${JAR_FILE} /app/app.jar

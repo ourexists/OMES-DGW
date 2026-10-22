@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.omes.dgw</groupId>
+        <artifactId>omes-dgw</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>omes-dgw-portal-box</artifactId>
+    <name>omes-dgw-portal-box</name>
+    <description>边缘盒子门户：Caffeine 内存，无协议采集；前端内嵌同 JAR，不前后端分离</description>
+
+    <properties>
+        <!-- -Dskip.frontend=true 跳过 npm 构建（仅后端联调） -->
+        <skip.frontend>false</skip.frontend>
+        <frontend.working.dir>${project.basedir}/../omes-dgw-web</frontend.working.dir>
+        <node.version>v20.18.1</node.version>
+        <npm.version>10.8.2</npm.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.omes.dgw</groupId>
+            <artifactId>omes-dgw-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.omes.dgw</groupId>
+            <artifactId>omes-dgw-store-memory</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.15.1</version>
+                <configuration>
+                    <workingDirectory>${frontend.working.dir}</workingDirectory>
+                    <installDirectory>${project.build.directory}/frontend</installDirectory>
+                    <skip>${skip.frontend}</skip>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-node-and-npm</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <configuration>
+                            <nodeVersion>${node.version}</nodeVersion>
+                            <npmVersion>${npm.version}</npmVersion>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-install</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <!-- install 比 ci 更耐本地已有 node_modules / 锁文件漂移 -->
+                            <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-build-box</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>run build:box</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-embedded-frontend</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skip.frontend}</skip>
+                            <target>
+                                <mkdir dir="${project.build.outputDirectory}/static"/>
+                                <copy todir="${project.build.outputDirectory}/static" overwrite="true">
+                                    <fileset dir="${frontend.working.dir}/dist"/>
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

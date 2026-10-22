@@ -1,0 +1,81 @@
+# =============================================================================
+# 边缘盒子门户（omes-dgw-portal-box）
+# 仅台账 + 内存缓存；不做协议采集 / 无 Redis / 无 Influx
+# 前端内嵌于本 JAR（classpath:/static），浏览器直接访问本机端口，不前后端分离
+# 现场覆盖：config/config-box.properties 或 DEPLOY_CONFIG_FILE
+# =============================================================================
+
+server:
+  port: ${SERVER_PORT:12020}
+
+spring:
+  application:
+    name: omes-dgw-portal-box
+  config:
+    import: optional:file:${omes.deploy.root:.}/config/config-box.properties
+  datasource:
+    url: jdbc:sqlite:${SQLITE_PATH:./data/omes-dgw-box.db}?journal_mode=WAL&busy_timeout=5000&foreign_keys=on
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+
+app:
+  deploy:
+    config-file: ${DEPLOY_CONFIG_FILE:config/config-box.properties}
+  portal:
+    mode: box
+
+  security:
+    jwt:
+      secret: mGX8dXtX3/t8xucjIpA9gr4y+tGe/bzkDepbu72BrrFwMybHYasrzD5VMfJ8ilef
+      expiration-ms: 86400000
+    users:
+      - username: admin
+        password: admin123
+        nickname: 系统管理员
+        roles:
+          - ADMIN
+      - username: operator
+        password: operator123
+        nickname: 运营人员
+        roles:
+          - OPERATOR
+
+  menus:
+    - id: equipment-ledger
+      title: 设备台账
+      path: /equipment/ledger
+      icon: setting
+      roles:
+        - ADMIN
+        - OPERATOR
+    - id: equipment-overview
+      title: 设备监控
+      path: /equipment/overview
+      icon: cluster
+      roles:
+        - ADMIN
+        - OPERATOR
+    - id: system-runtime-config
+      title: 系统配置
+      path: /system/runtime-config
+      icon: setting
+      roles:
+        - ADMIN
+  collect:
+    enabled: false
+    store-backend: caffeine
+    monitor-type: none
+    diagnostics:
+      memory-log-enabled: ${COLLECT_DIAGNOSTICS_MEMORY_LOG:true}
+      memory-log-interval-sec: ${COLLECT_DIAGNOSTICS_MEMORY_LOG_INTERVAL_SEC:300}
+    history:
+      enabled: false
+    metrics:
+      persist-to-influx: false
+    online-event:
+      enabled: ${COLLECT_ONLINE_EVENT_ENABLED:true}
+      batch-size: ${COLLECT_ONLINE_EVENT_BATCH_SIZE:100}
+      flush-interval-sec: ${COLLECT_ONLINE_EVENT_FLUSH_INTERVAL_SEC:30}
+      max-queue-size: ${COLLECT_ONLINE_EVENT_MAX_QUEUE_SIZE:10000}
+    point-write:
+      enabled: false

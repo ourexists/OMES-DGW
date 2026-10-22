@@ -170,20 +170,22 @@
         style="margin-bottom: 16px"
         message="正在复制设备：将保留源设备协议与点位配置，请修改名称、编码、IP 等连接参数后保存。"
       />
-      <a-form layout="vertical" :model="formData" ref="formRef">
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="设备名称" required>
-              <a-input v-model:value="formData.name" placeholder="请输入设备名称" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="设备编码" required>
-              <a-input v-model:value="formData.code" placeholder="请输入设备编码" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="协议类型" required>
+      <a-form class="edit-form" layout="vertical" :model="formData" ref="formRef">
+        <section class="edit-section">
+          <h4 class="edit-section__title">基本信息</h4>
+          <a-row :gutter="16">
+            <a-col :span="12">
+              <a-form-item label="设备名称" required>
+                <a-input v-model:value="formData.name" placeholder="请输入设备名称" />
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="设备编码" required>
+                <a-input v-model:value="formData.code" placeholder="请输入设备编码" />
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="协议类型" required>
               <a-select
                 v-model:value="formData.protocol"
                 :options="protocolOptions"
@@ -195,10 +197,10 @@
                 option-filter-prop="label"
                 @change="handleProtocolChange"
               />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="所属分组">
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="所属分组">
               <a-select
                 v-model:value="formData.categoryCode"
                 :options="categoryOptions"
@@ -208,20 +210,25 @@
                 placeholder="请选择所属分组"
                 option-filter-prop="label"
               />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="IP地址" required>
-              <a-input v-model:value="formData.ipAddress" placeholder="请输入IP地址" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="端口号" required>
-              <a-input-number v-model:value="formData.port" :min="1" :max="65535" style="width: 100%" placeholder="请输入端口号" />
-            </a-form-item>
-          </a-col>
-          <a-col v-if="showUnitIdField" :span="12">
-            <a-form-item :label="unitIdLabel" :extra="unitIdExtra">
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </section>
+        <section class="edit-section">
+          <h4 class="edit-section__title">连接参数</h4>
+          <a-row :gutter="16">
+            <a-col :span="12">
+              <a-form-item label="IP地址" required>
+                <a-input v-model:value="formData.ipAddress" placeholder="请输入IP地址" />
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="端口号" required>
+                <a-input-number v-model:value="formData.port" :min="1" :max="65535" style="width: 100%" placeholder="请输入端口号" />
+              </a-form-item>
+            </a-col>
+            <a-col v-if="showUnitIdField" :span="12">
+              <a-form-item :label="unitIdLabel" :extra="unitIdExtra">
               <a-input-number
                 v-model:value="formData.unitId"
                 :min="0"
@@ -229,36 +236,85 @@
                 style="width: 100%"
                 :placeholder="unitIdPlaceholder"
               />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="默认采集周期(秒)" required>
-              <a-input-number v-model:value="formData.collectIntervalSec" :min="1" style="width: 100%" placeholder="请输入默认采集周期" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="连接超时(毫秒)" required>
-              <a-input-number v-model:value="formData.connectTimeoutMs" :min="500" :max="120000" style="width: 100%" placeholder="建议 3000～10000" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item
-              label="是否共享查询线程"
-              extra="控制写入是否复用采集轮询连接池：选「是」则共享查询线程，写入后 500ms 补读；选「否」则每次独立短连接（推荐，与轮询隔离）。针对部分PLC只能单连接场景"
-            >
+              </a-form-item>
+            </a-col>
+            <a-col v-if="showS7Fields" :span="12">
+              <a-form-item label="机架号(rack)" extra="S7-1200/1500/200 Smart 通常为 0">
+              <a-input-number
+                v-model:value="formData.s7Rack"
+                :min="0"
+                :max="7"
+                style="width: 100%"
+                placeholder="默认 0"
+              />
+              </a-form-item>
+            </a-col>
+            <a-col v-if="showS7Fields" :span="12">
+              <a-form-item label="槽号(slot)" extra="1200/1500/200 Smart 为 1，S7-300 多为 2，S7-400 多为 3">
+              <a-input-number
+                v-model:value="formData.s7Slot"
+                :min="0"
+                :max="31"
+                style="width: 100%"
+                placeholder="默认 1"
+              />
+              </a-form-item>
+            </a-col>
+            <a-col v-if="showOpcUaFields" :span="12">
+              <a-form-item label="端点发现" extra="开启后由服务器发现端点；关闭则直连 IP 和端口">
+                <a-switch v-model:checked="formData.opcuaDiscovery" checked-children="是" un-checked-children="否" />
+              </a-form-item>
+            </a-col>
+            <a-col v-if="showOpcUaFields" :span="12">
+              <a-form-item label="安全策略">
+                <a-select v-model:value="formData.opcuaSecurityPolicy" :options="opcuaSecurityPolicyOptions" />
+              </a-form-item>
+            </a-col>
+            <a-col v-if="showOpcUaFields" :span="12">
+              <a-form-item label="用户名" extra="留空为匿名登录">
+                <a-input v-model:value="formData.opcuaUsername" placeholder="匿名可留空" />
+              </a-form-item>
+            </a-col>
+            <a-col v-if="showOpcUaFields" :span="12">
+              <a-form-item label="密码">
+                <a-input-password v-model:value="formData.opcuaPassword" placeholder="匿名可留空" />
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </section>
+        <section class="edit-section">
+          <h4 class="edit-section__title">采集设置</h4>
+          <a-row :gutter="16">
+            <a-col :span="12">
+              <a-form-item label="默认采集周期(秒)" required>
+                <a-input-number v-model:value="formData.collectIntervalSec" :min="1" style="width: 100%" placeholder="请输入默认采集周期" />
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="连接超时(毫秒)" required :extra="timeoutExtra">
+                <a-input-number v-model:value="formData.connectTimeoutMs" :min="500" :max="120000" style="width: 100%" placeholder="建议 3000～10000" />
+              </a-form-item>
+            </a-col>
+            <a-col v-if="showReusePollingField" :span="12">
+              <a-form-item
+                label="是否共享查询线程"
+                extra="仅 FINS/SLMP。选「是」写入复用轮询连接；选「否」每次独立短连接。Modbus 固定一条连接，不使用该项"
+              >
               <a-select
                 v-model:value="formData.reusePollingConnection"
                 :options="reusePollingConnectionOptions"
                 placeholder="请选择"
               />
-            </a-form-item>
-          </a-col>
-          <a-col :span="24">
-            <a-form-item label="备注">
-              <a-textarea v-model:value="formData.remark" :rows="3" placeholder="请输入备注" />
-            </a-form-item>
-          </a-col>
-        </a-row>
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </section>
+        <section class="edit-section">
+          <h4 class="edit-section__title">备注</h4>
+          <a-form-item>
+            <a-textarea v-model:value="formData.remark" :rows="3" placeholder="请输入备注" aria-label="备注" />
+          </a-form-item>
+        </section>
       </a-form>
       <template #footer>
         <div class="device-modal-footer">
@@ -295,9 +351,27 @@
         <a-descriptions-item v-if="showDeviceUnitId(currentDevice)" :label="getUnitIdLabel(currentDevice.protocol)">
           {{ formatUnitId(currentDevice) }}
         </a-descriptions-item>
+        <a-descriptions-item v-if="showS7FieldsFor(currentDevice?.protocol)" label="机架号(rack)">
+          {{ currentDevice.s7Rack ?? 0 }}
+        </a-descriptions-item>
+        <a-descriptions-item v-if="showS7FieldsFor(currentDevice?.protocol)" label="槽号(slot)">
+          {{ currentDevice.s7Slot ?? 1 }}
+        </a-descriptions-item>
+        <a-descriptions-item v-if="showOpcUaFieldsFor(currentDevice?.protocol)" label="端点发现">
+          {{ currentDevice.opcuaDiscovery === false ? '否' : '是' }}
+        </a-descriptions-item>
+        <a-descriptions-item v-if="showOpcUaFieldsFor(currentDevice?.protocol)" label="安全策略">
+          {{ currentDevice.opcuaSecurityPolicy || 'NONE' }}
+        </a-descriptions-item>
+        <a-descriptions-item v-if="showOpcUaFieldsFor(currentDevice?.protocol)" label="用户名">
+          {{ currentDevice.opcuaUsername || '匿名' }}
+        </a-descriptions-item>
+        <a-descriptions-item v-if="showOpcUaFieldsFor(currentDevice?.protocol)" label="密码">
+          {{ currentDevice.opcuaPassword ? '已设置' : '未设置' }}
+        </a-descriptions-item>
         <a-descriptions-item label="默认采集周期(秒)">{{ currentDevice.collectIntervalSec ?? '-' }}</a-descriptions-item>
         <a-descriptions-item label="连接超时(毫秒)">{{ currentDevice.connectTimeoutMs ?? '-' }}</a-descriptions-item>
-        <a-descriptions-item label="是否共享查询线程">{{ formatReusePollingConnection(currentDevice) }}</a-descriptions-item>
+        <a-descriptions-item v-if="showDeviceReusePolling(currentDevice)" label="是否共享查询线程">{{ formatReusePollingConnection(currentDevice) }}</a-descriptions-item>
         <a-descriptions-item label="备注" :span="2">{{ currentDevice.remark || '-' }}</a-descriptions-item>
       </a-descriptions>
     </a-modal>
@@ -360,6 +434,12 @@ const createEmptyDeviceForm = () => ({
   ipAddress: '',
   port: null,
   unitId: null,
+  s7Rack: null,
+  s7Slot: null,
+  opcuaDiscovery: true,
+  opcuaSecurityPolicy: 'NONE',
+  opcuaUsername: '',
+  opcuaPassword: '',
   collectIntervalSec: 1,
   connectTimeoutMs: 3000,
   reusePollingConnection: false,
@@ -470,15 +550,33 @@ const protocolLoading = ref(false)
 const isUnitIdProtocol = protocol => protocol === 'MODBUS_TCP' || protocol === 'FINS_TCP' || protocol === 'SLMP_TCP'
 
 const showUnitIdField = computed(() => isUnitIdProtocol(formData.protocol))
+const isReusePollingProtocol = protocol => protocol === 'FINS_TCP' || protocol === 'SLMP_TCP'
+const showReusePollingField = computed(() => isReusePollingProtocol(formData.protocol))
+const showDeviceReusePolling = device => isReusePollingProtocol(device?.protocol)
+const showS7FieldsFor = protocol => protocol === 'S7_TCP'
+const showS7Fields = computed(() => showS7FieldsFor(formData.protocol))
+const showOpcUaFieldsFor = protocol => protocol === 'OPC_UA'
+const showOpcUaFields = computed(() => showOpcUaFieldsFor(formData.protocol))
+const opcuaSecurityPolicyOptions = [
+  { label: 'None', value: 'NONE' },
+  { label: 'Basic128Rsa15', value: 'Basic128Rsa15' },
+  { label: 'Basic256', value: 'Basic256' },
+  { label: 'Basic256Sha256', value: 'Basic256Sha256' }
+]
+const timeoutExtra = computed(() => (
+  formData.protocol === 'OPC_UA' ? 'OPC UA 会话建立较慢，建议不少于 10000' : ''
+))
 
 const defaultPortOf = protocol => {
   if (protocol === 'SLMP_TCP') return 5000
   if (protocol === 'FINS_TCP') return 9600
   if (protocol === 'MODBUS_TCP') return 502
+  if (protocol === 'S7_TCP') return 102
+  if (protocol === 'OPC_UA') return 4840
   return null
 }
 
-const PROTOCOL_DEFAULT_PORTS = [502, 5000, 9600]
+const PROTOCOL_DEFAULT_PORTS = [502, 5000, 9600, 102, 4840]
 
 const handleProtocolChange = protocol => {
   const nextPort = defaultPortOf(protocol)
@@ -487,6 +585,9 @@ const handleProtocolChange = protocol => {
   }
   if (protocol === 'SLMP_TCP' && (formData.unitId === 1 || formData.unitId === 0)) {
     formData.unitId = null
+  }
+  if (protocol === 'OPC_UA' && (formData.connectTimeoutMs == null || formData.connectTimeoutMs === 3000)) {
+    formData.connectTimeoutMs = 10000
   }
 }
 
@@ -736,10 +837,20 @@ const buildDevicePayload = (withId = true) => {
   if (showUnitIdField.value) {
     payload.unitId = formData.unitId ?? null
   }
-  return {
-    ...payload,
-    reusePollingConnection: formData.reusePollingConnection === true
+  if (showS7Fields.value) {
+    payload.s7Rack = formData.s7Rack ?? null
+    payload.s7Slot = formData.s7Slot ?? null
   }
+  if (showOpcUaFields.value) {
+    payload.opcuaDiscovery = formData.opcuaDiscovery !== false
+    payload.opcuaSecurityPolicy = formData.opcuaSecurityPolicy || 'NONE'
+    payload.opcuaUsername = trimText(formData.opcuaUsername) || null
+    payload.opcuaPassword = formData.opcuaPassword || null
+  }
+  if (showReusePollingField.value) {
+    payload.reusePollingConnection = formData.reusePollingConnection === true
+  }
+  return payload
 }
 
 const buildPagePayload = () => cleanPayload({

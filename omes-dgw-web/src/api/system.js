@@ -8,56 +8,10 @@ export function getSystemRestartStatus() {
   return request({ url: '/system/restart', method: 'get', timeout: 3000, silent: true })
 }
 
-export function getStorePluginStatus() {
+export function getPortalInfo() {
   return request({
-    url: '/system/store-plugin',
+    url: '/system/portal',
     method: 'get'
-  })
-}
-
-export function uploadStorePlugin(type, file) {
-  const formData = new FormData()
-  formData.append('file', file)
-  return request({
-    url: '/system/store-plugin/upload',
-    method: 'post',
-    params: { type },
-    data: formData,
-    headers: { 'Content-Type': 'multipart/form-data' },
-    timeout: 120000
-  })
-}
-
-export function removeStorePlugin(type) {
-  return request({
-    url: '/system/store-plugin',
-    method: 'delete',
-    params: { type }
-  })
-}
-
-export function saveStorePluginConfig(data) {
-  return request({
-    url: '/system/store-plugin/config',
-    timeout: 120000,
-    method: 'put',
-    data
-  })
-}
-
-export function probeRedis(params) {
-  return request({
-    url: '/system/store-plugin/probe/redis',
-    method: 'post',
-    params
-  })
-}
-
-export function probeInflux(params) {
-  return request({
-    url: '/system/store-plugin/probe/influx',
-    method: 'post',
-    params
   })
 }
 

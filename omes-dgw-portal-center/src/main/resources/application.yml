@@ -1,0 +1,159 @@
+# =============================================================================
+# 中控电脑门户默认配置（对应 RuntimeConfigCatalog 可维护项）
+# 现场覆盖：JAR 同级 config/config-center.properties 或环境变量 DEPLOY_CONFIG_FILE
+# =============================================================================
+
+server:
+  port: ${SERVER_PORT:12020}
+
+spring:
+  application:
+    name: omes-dgw-portal-center
+  config:
+    import: optional:file:${omes.deploy.root:.}/config/config-center.properties
+  datasource:
+    url: jdbc:sqlite:${SQLITE_PATH:./data/omes-dgw-center.db}?journal_mode=WAL&busy_timeout=5000&foreign_keys=on
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+
+app:
+  deploy:
+    config-file: ${DEPLOY_CONFIG_FILE:config/config-center.properties}
+  portal:
+    mode: center
+
+  security:
+    jwt:
+      secret: mGX8dXtX3/t8xucjIpA9gr4y+tGe/bzkDepbu72BrrFwMybHYasrzD5VMfJ8ilef
+      expiration-ms: 86400000
+    users:
+      - username: admin
+        password: admin123
+        nickname: 系统管理员
+        roles:
+          - ADMIN
+      - username: operator
+        password: operator123
+        nickname: 运营人员
+        roles:
+          - OPERATOR
+
+  menus:
+    - id: monitoring-overview
+      title: 总览
+      path: /monitoring/overview
+      icon: monitor
+      roles:
+        - ADMIN
+        - OPERATOR
+    - id: equipment-overview
+      title: 设备监控
+      path: /equipment/overview
+      icon: cluster
+      roles:
+        - ADMIN
+        - OPERATOR
+    - id: equipment-ledger
+      title: 设备台账
+      path: /equipment/ledger
+      icon: setting
+      roles:
+        - ADMIN
+        - OPERATOR
+    - id: equipment-command
+      title: 指令记录
+      path: /equipment/command
+      icon: profile
+      roles:
+        - ADMIN
+    - id: system-runtime-config
+      title: 系统配置
+      path: /system/runtime-config
+      icon: setting
+      roles:
+        - ADMIN
+  collect:
+    enabled: true
+    store-backend: redis
+    monitor-type: influxdb
+    redis-key-prefix: ${COLLECT_REDIS_KEY_PREFIX:omes:dwg:device:realtime}
+    polling-scheduler-pool-size: ${COLLECT_POLLING_SCHEDULER_POOL_SIZE:8}
+    poll-skip-warn-threshold: ${COLLECT_POLL_SKIP_WARN_THRESHOLD:10}
+    diagnostics:
+      poll-timing-mode: ${COLLECT_DIAGNOSTICS_POLL_TIMING_MODE:on_issue}
+      point-value-change-log-enabled: ${COLLECT_DIAGNOSTICS_POINT_VALUE_CHANGE:true}
+      memory-log-enabled: ${COLLECT_DIAGNOSTICS_MEMORY_LOG:true}
+      memory-log-interval-sec: ${COLLECT_DIAGNOSTICS_MEMORY_LOG_INTERVAL_SEC:300}
+    connection:
+      max-consecutive-failures: ${COLLECT_CONNECTION_MAX_CONSECUTIVE_FAILURES:5}
+      backoff-initial-ms: ${COLLECT_CONNECTION_BACKOFF_INITIAL_MS:10000}
+      backoff-max-ms: ${COLLECT_CONNECTION_BACKOFF_MAX_MS:300000}
+      backoff-multiplier: ${COLLECT_CONNECTION_BACKOFF_MULTIPLIER:2.0}
+      max-open-retries: ${COLLECT_CONNECTION_MAX_OPEN_RETRIES:10}
+      backoff-max-scale-steps: ${COLLECT_CONNECTION_BACKOFF_MAX_SCALE_STEPS:10}
+      backoff-max-scale-factor: ${COLLECT_CONNECTION_BACKOFF_MAX_SCALE_FACTOR:0.1}
+      plc-connection-max-lease-sec: ${COLLECT_PLC_CONNECTION_MAX_LEASE_SEC:120}
+      plc-connection-max-wait-sec: ${COLLECT_PLC_CONNECTION_MAX_WAIT_SEC:20}
+      plc-connection-max-idle-sec: ${COLLECT_PLC_CONNECTION_MAX_IDLE_SEC:300}
+      batch-start-stagger-ms: ${COLLECT_CONNECTION_BATCH_START_STAGGER_MS:300}
+    modbus-polling:
+      max-merge-gap-registers: ${COLLECT_MODBUS_MAX_MERGE_GAP_REGISTERS:8}
+      max-merge-gap-bits: ${COLLECT_MODBUS_MAX_MERGE_GAP_BITS:64}
+      tag-batch-size: ${COLLECT_MODBUS_TAG_BATCH_SIZE:20}
+      read-max-retries: ${COLLECT_MODBUS_READ_MAX_RETRIES:3}
+      read-retry-delay-ms: ${COLLECT_MODBUS_READ_RETRY_DELAY_MS:300}
+    slmp-polling:
+      max-merge-gap-words: ${COLLECT_SLMP_MAX_MERGE_GAP_WORDS:8}
+      max-merge-gap-bits: ${COLLECT_SLMP_MAX_MERGE_GAP_BITS:64}
+      max-words-per-request: ${COLLECT_SLMP_MAX_WORDS_PER_REQUEST:960}
+      max-bits-per-request: ${COLLECT_SLMP_MAX_BITS_PER_REQUEST:3584}
+    fins-polling:
+      max-merge-gap-words: ${COLLECT_FINS_MAX_MERGE_GAP_WORDS:8}
+      max-words-per-read: ${COLLECT_FINS_MAX_WORDS_PER_READ:250}
+      max-words-per-write: ${COLLECT_FINS_MAX_WORDS_PER_WRITE:80}
+    offline:
+      enabled: true
+      check-delay-ms: ${COLLECT_OFFLINE_CHECK_DELAY_MS:30000}
+      offline-timeout-ms: ${COLLECT_OFFLINE_TIMEOUT_MS:30000}
+      scheduler-pool-size: ${COLLECT_OFFLINE_SCHEDULER_POOL_SIZE:8}
+    metrics:
+      sample-interval-sec: ${METRICS_SAMPLE_INTERVAL_SEC:10}
+      instance-id: ${METRICS_INSTANCE_ID:}
+      queue-depth-refresh-ms: ${COLLECT_METRICS_QUEUE_DEPTH_REFRESH_MS:30000}
+      offline-duration-refresh-ms: ${COLLECT_METRICS_OFFLINE_DURATION_REFRESH_MS:60000}
+      history-minutes: 60
+      persist-to-influx: ${METRICS_PERSIST_INFLUX:true}
+      influx-batch-size: ${METRICS_INFLUX_BATCH_SIZE:500}
+      influx-flush-interval-sec: ${METRICS_INFLUX_FLUSH_INTERVAL_SEC:60}
+      influx-max-queue-size: ${METRICS_INFLUX_MAX_QUEUE_SIZE:10000}
+      influx-query-max-minutes: ${METRICS_INFLUX_QUERY_MAX_MINUTES:10080}
+    history:
+      enabled: ${COLLECT_HISTORY_ENABLED:true}
+      batch-size: ${COLLECT_HISTORY_BATCH_SIZE:200}
+      flush-interval-sec: ${COLLECT_HISTORY_FLUSH_INTERVAL_SEC:60}
+      max-queue-size: ${COLLECT_HISTORY_MAX_QUEUE_SIZE:50000}
+      query-max-minutes: ${COLLECT_HISTORY_QUERY_MAX_MINUTES:10080}
+      chart-max-points-per-series: ${COLLECT_HISTORY_CHART_MAX_POINTS:500}
+      max-write-retries: ${COLLECT_HISTORY_MAX_WRITE_RETRIES:3}
+    online-event:
+      enabled: ${COLLECT_ONLINE_EVENT_ENABLED:true}
+      batch-size: ${COLLECT_ONLINE_EVENT_BATCH_SIZE:100}
+      flush-interval-sec: ${COLLECT_ONLINE_EVENT_FLUSH_INTERVAL_SEC:30}
+      max-queue-size: ${COLLECT_ONLINE_EVENT_MAX_QUEUE_SIZE:10000}
+    point-write:
+      enabled: ${COLLECT_POINT_WRITE_ENABLED:true}
+      idle-poll-interval-ms: ${COLLECT_POINT_WRITE_IDLE_POLL_MS:500}
+  influx:
+    url: ${INFLUX_URL:http://localhost:8086}
+    token: ${INFLUX_TOKEN:}
+    org: ${INFLUX_ORG:omes}
+    bucket: ${INFLUX_BUCKET:dgw_metrics}
+    connect-timeout-ms: 10000
+    read-timeout-ms: 10000
+    write-timeout-ms: 10000

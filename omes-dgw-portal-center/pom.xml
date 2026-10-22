@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.omes.dgw</groupId>
+        <artifactId>omes-dgw</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>omes-dgw-portal-center</artifactId>
+    <name>omes-dgw-portal-center</name>
+    <description>中控电脑门户：Redis + InfluxDB，完整协议采集</description>
+    <dependencies>
+        <dependency>
+            <groupId>com.omes.dgw</groupId>
+            <artifactId>omes-dgw-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.omes.dgw</groupId>
+            <artifactId>omes-dgw-collect</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.omes.dgw</groupId>
+            <artifactId>omes-dgw-store-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.omes.dgw</groupId>
+            <artifactId>omes-dgw-store-influx</artifactId>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

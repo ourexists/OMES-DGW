@@ -1,6 +1,12 @@
 # OMES设备软边缘网关 - Docker 交付与部署
 
-本目录用于将 **omes-dgw-server**（后端）与 **omes-dgw-web**（前端）打成 Docker 镜像，并生成现场可直接使用的 **omes-dgw-deploy** 实施包。
+本目录用于将 **omes-dgw-portal-center**（中控电脑后端，默认）与 **omes-dgw-web**（前端）打成 Docker 镜像，并生成现场可直接使用的 **omes-dgw-deploy** 实施包。
+
+产品入口：
+- **边缘盒子**：`omes-dgw-portal-box`（内存、无采集）
+- **中控电脑**：`omes-dgw-portal-center`（Redis+Influx+采集）— 实施包默认打此 jar
+
+Docker 镜像/服务名仍可用 `omes-dgw-server`（兼容现场 compose），实际进程为 portal-center。
 
 ```
 docker/
@@ -35,7 +41,7 @@ docker/
 
 | 组件 | 来源 | 放入位置 |
 |------|------|----------|
-| 后端 jar | `omes-dgw-server` 执行 `mvn -DskipTests package` | `build/packages/omes-dgw-server-1.0-SNAPSHOT.jar` |
+| 后端 jar | 根目录 `mvn -pl omes-dgw-portal-center -am -DskipTests package` | `build/packages/omes-dgw-portal-center-1.0-SNAPSHOT.jar` |
 | 前端 dist | `omes-dgw-web` 执行 `npm run build` | `build/packages/dist/`（整目录） |
 
 详见 [build/packages/README.md](./build/packages/README.md)。
