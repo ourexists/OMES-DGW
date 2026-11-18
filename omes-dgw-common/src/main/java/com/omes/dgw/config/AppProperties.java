@@ -16,6 +16,7 @@ public class AppProperties {
     private Portal portal = new Portal();
     private Collect collect = new Collect();
     private Influx influx = new Influx();
+    private Northbound northbound = new Northbound();
     private Security security = new Security();
 
     @Data
@@ -222,6 +223,40 @@ public class AppProperties {
         private int connectTimeoutMs = 10_000;
         private int readTimeoutMs = 10_000;
         private int writeTimeoutMs = 10_000;
+    }
+
+    @Data
+    public static class Northbound {
+        private Mqtt mqtt = new Mqtt();
+    }
+
+    /**
+     * MQTT推送：将设备实时快照按「每设备一条消息」推送到 Broker。
+     * 关闭 {@link Mqtt#enabled} 时不建连、不推送。
+     */
+    @Data
+    public static class Mqtt {
+        /** 总开关；false 时不连接 Broker、不推送 */
+        private boolean enabled = false;
+        /** Broker 地址，如 tcp://127.0.0.1:1883 或 ssl://host:8883 */
+        private String brokerUrl = "tcp://127.0.0.1:1883";
+        /** 客户端 ID；空则自动生成 omes-dgw-{portal}-{随机} */
+        private String clientId = "";
+        private String username = "";
+        private String password = "";
+        /**
+         * 主题模板，支持占位符：{deviceId} {deviceCode} {protocol}
+         */
+        private String topic = "omes/dgw/realtime/{deviceCode}";
+        /** QoS：0 / 1 / 2 */
+        private int qos = 0;
+        /** 是否 retain */
+        private boolean retained = false;
+        private int connectionTimeoutSec = 10;
+        private int keepAliveIntervalSec = 60;
+        private boolean automaticReconnect = true;
+        /** 推送线程池队列上限；满则丢弃并记日志，避免阻塞采集 */
+        private int publishQueueCapacity = 2000;
     }
 
     @Data

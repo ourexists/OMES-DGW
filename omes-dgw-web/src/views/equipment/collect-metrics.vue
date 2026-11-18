@@ -1,39 +1,65 @@
 <template>
   <div class="page-container collect-metrics-page">
     <div class="page-header">
-      <div>
-        <h2>性能指标 - {{ deviceName }}</h2>
-        <div v-if="metricsMeta.deviceCode" class="page-subtitle">
-          {{ metricsMeta.deviceCode }}
-          <span v-if="metricsMeta.protocol"> · {{ metricsMeta.protocol }}</span>
-          <a-tag :color="querySource === 'influx' ? 'blue' : 'orange'" style="margin-left: 8px">
-            {{ querySourceLabel }}
-          </a-tag>
-        </div>
+      <div class="title-block">
+        <h2>性能指标</h2>
+        <span class="device-name" :title="deviceName">{{ deviceName }}</span>
+        <a-tag
+          v-if="querySourceLabel"
+          class="source-tag"
+          :color="querySource === 'influx' ? 'blue' : 'orange'"
+        >
+          {{ querySourceLabel }}
+        </a-tag>
       </div>
-      <a-space>
-        <a-select v-model:value="searchForm.minutes" style="width: 140px" @change="loadChart">
-          <a-select-option v-for="m in minuteOptions" :key="m" :value="m">近{{ m }}分钟</a-select-option>
-        </a-select>
-        <a-select v-model:value="refreshInterval" style="width: 140px" @change="restartPolling">
-          <a-select-option :value="0">手动刷新</a-select-option>
-          <a-select-option :value="10000">每10秒刷新</a-select-option>
-          <a-select-option :value="30000">每30秒刷新</a-select-option>
-          <a-select-option :value="60000">每60秒刷新</a-select-option>
-        </a-select>
-        <a-button type="primary" :loading="chartLoading" @click="loadChart">
-          <ReloadOutlined /> 刷新
-        </a-button>
-        <a-button @click="goBack">
-          <LeftOutlined /> 返回
-        </a-button>
-      </a-space>
+      <a-button @click="goBack">
+        <LeftOutlined /> 返回
+      </a-button>
     </div>
 
-    <a-row class="info-row" :gutter="[16, 16]">
+    <a-card class="toolbar-card" size="small">
+      <div class="toolbar-row">
+        <div class="toolbar-meta" v-if="metricsMeta.deviceCode || metricsMeta.protocol">
+          <span v-if="metricsMeta.deviceCode" class="meta-item">{{ metricsMeta.deviceCode }}</span>
+          <span v-if="metricsMeta.protocol" class="meta-item">{{ metricsMeta.protocol }}</span>
+          <span v-if="metricsMeta.lastUpdateTime" class="meta-item muted">
+            更新于 {{ metricsMeta.lastUpdateTime }}
+          </span>
+        </div>
+        <div class="toolbar-actions">
+          <a-select
+            v-model:value="searchForm.minutes"
+            class="toolbar-select"
+            @change="loadChart"
+          >
+            <a-select-option v-for="m in minuteOptions" :key="m" :value="m">
+              近{{ m }}分钟
+            </a-select-option>
+          </a-select>
+          <a-select
+            v-model:value="refreshInterval"
+            class="toolbar-select"
+            @change="restartPolling"
+          >
+            <a-select-option :value="0">手动刷新</a-select-option>
+            <a-select-option :value="10000">每10秒刷新</a-select-option>
+            <a-select-option :value="30000">每30秒刷新</a-select-option>
+            <a-select-option :value="60000">每60秒刷新</a-select-option>
+          </a-select>
+          <a-button type="primary" :loading="chartLoading" @click="loadChart">
+            <ReloadOutlined /> 刷新
+          </a-button>
+        </div>
+      </div>
+    </a-card>
+
+    <a-row class="info-row" :gutter="[12, 12]">
       <a-col class="info-col" :xs="24" :lg="8">
-        <a-card title="设备状态" size="small" class="info-card">
-          <a-descriptions :column="1" size="small" bordered>
+        <a-card size="small" class="info-card">
+          <template #title>
+            <span class="info-card-title">设备状态</span>
+          </template>
+          <a-descriptions :column="1" size="small" class="info-desc">
             <a-descriptions-item label="在线">
               <a-tag :color="metricsMeta.online ? 'green' : 'default'">
                 {{ metricsMeta.online === true ? '在线' : metricsMeta.online === false ? '离线' : '-' }}
@@ -55,8 +81,11 @@
         </a-card>
       </a-col>
       <a-col class="info-col" :xs="24" :lg="8">
-        <a-card title="轮询调度" size="small" class="info-card">
-          <a-descriptions :column="1" size="small" bordered>
+        <a-card size="small" class="info-card">
+          <template #title>
+            <span class="info-card-title">轮询调度</span>
+          </template>
+          <a-descriptions :column="1" size="small" class="info-desc">
             <a-descriptions-item label="连续跳过">
               <span :class="{ 'text-warning': (metricsMeta.pollSkip?.skipStreak || 0) >= 3 }">
                 {{ metricsMeta.pollSkip?.skipStreak ?? 0 }} 次
@@ -70,8 +99,11 @@
         </a-card>
       </a-col>
       <a-col class="info-col" :xs="24" :lg="8">
-        <a-card title="系统资源" size="small" class="info-card">
-          <a-descriptions :column="1" size="small" bordered>
+        <a-card size="small" class="info-card">
+          <template #title>
+            <span class="info-card-title">系统资源</span>
+          </template>
+          <a-descriptions :column="1" size="small" class="info-desc">
             <a-descriptions-item label="实例 ID">{{ metricsMeta.instanceId || '-' }}</a-descriptions-item>
             <a-descriptions-item label="JVM 堆使用率">
               {{ formatPercent(metricsMeta.infrastructure?.jvmHeapUsedRatio) }}%
@@ -85,7 +117,11 @@
       </a-col>
     </a-row>
 
-    <a-card title="性能指标" class="chart-card section-card">
+    <a-card class="chart-card section-card">
+      <template #title>
+        <span class="section-title">性能趋势</span>
+        <span v-if="chartData.length" class="section-meta">{{ chartData.length }} 组指标</span>
+      </template>
       <a-empty v-if="!chartData.length" description="暂无监控数据" />
       <div v-else class="chart-grid">
         <div
@@ -93,6 +129,10 @@
           :key="item.key || item.title"
           class="metrics-chart-wrap"
         >
+          <div class="metrics-chart-head">
+            <span class="metrics-chart-title">{{ item.title }}</span>
+            <span v-if="item.unit" class="metrics-chart-unit">{{ item.unit }}</span>
+          </div>
           <div
             v-if="!item.empty"
             :ref="el => setChartRef(el, item.key || item.title)"
@@ -207,7 +247,23 @@ const clampMinutesToMode = () => {
   }
 }
 
+const LINE_COLORS = ['#0078d4', '#5c2e91', '#038387', '#bf0077', '#eaa300']
+
 const seriesUnit = (chart, seriesItem) => seriesItem.unit || chart.unit || ''
+
+const styleYAxis = yAxis => {
+  const axes = Array.isArray(yAxis) ? yAxis : [yAxis]
+  return axes.map((axis, index) => ({
+    ...axis,
+    nameTextStyle: { color: '#616161', fontSize: 11, ...(axis?.nameTextStyle || {}) },
+    axisLabel: { color: '#616161', fontSize: 11, ...(axis?.axisLabel || {}) },
+    axisLine: { show: false },
+    axisTick: { show: false },
+    splitLine: index === 0
+      ? { lineStyle: { color: '#f0f0f0', type: 'dashed' } }
+      : { show: false }
+  }))
+}
 
 const renderChart = async charts => {
   chartData.value = charts
@@ -223,67 +279,86 @@ const renderChart = async charts => {
       const el = chartRefs.value[data.key || data.title]
       if (!el) return null
 
-        const chart = echarts.init(el)
-        const yAxis = buildChartYAxis(data)
+      const chart = echarts.init(el)
+      const yAxis = styleYAxis(buildChartYAxis(data))
 
-        chart.setOption({
-          title: {
-            text: data.title,
-            left: 'center',
-            textStyle: {fontSize: 14, fontWeight: 600}
+      chart.setOption({
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'line' },
+          formatter: params => {
+            if (!params?.length) return ''
+            let result = `${params[0].name}<br/>`
+            params.forEach(item => {
+              const series = data.series[item.seriesIndex]
+              const unit = seriesUnit(data, series)
+              result += `${item.marker}${item.seriesName}: ${item.value ?? '-'}${unit}<br/>`
+            })
+            return result
+          }
+        },
+        legend: {
+          data: data.series.map(item => item.name),
+          bottom: 4,
+          itemWidth: 12,
+          itemHeight: 8,
+          textStyle: { color: '#616161', fontSize: 11 }
+        },
+        grid: {
+          left: 12,
+          right: data.dualAxis ? 28 : 16,
+          top: 20,
+          bottom: 36,
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          boundaryGap: false,
+          data: data.timeLabels,
+          axisLabel: {
+            color: '#616161',
+            fontSize: 11,
+            rotate: 45,
+            interval: Math.max(0, Math.floor(data.timeLabels.length / 12))
           },
-          tooltip: {
-            trigger: 'axis',
-            formatter: params => {
-              if (!params?.length) return ''
-              let result = `${params[0].name}<br/>`
-              params.forEach(item => {
-                const series = data.series[item.seriesIndex]
-                const unit = seriesUnit(data, series)
-                result += `${item.seriesName}: ${item.value ?? '-'}${unit}<br/>`
-              })
-              return result
-            }
-          },
-          legend: {
-            data: data.series.map(item => item.name),
-            bottom: 0
-          },
-          grid: {
-            left: '3%',
-            right: data.dualAxis ? '8%' : '5%',
-            top: 48,
-            bottom: 40,
-            containLabel: true
-          },
-          xAxis: {
-            type: 'category',
-            boundaryGap: false,
-            data: data.timeLabels,
-            name: '时间',
-            axisLabel: {
-              rotate: 45,
-              interval: Math.max(0, Math.floor(data.timeLabels.length / 12))
-            }
-          },
-          yAxis,
-          series: data.series.map((item, index) => ({
+          axisLine: { lineStyle: { color: '#e0e0e0' } },
+          axisTick: { show: false },
+          splitLine: { show: false }
+        },
+        yAxis,
+        series: data.series.map((item, index) => {
+          const color = LINE_COLORS[index % LINE_COLORS.length]
+          return {
             name: item.name,
             type: 'line',
-            smooth: true,
+            smooth: 0.25,
             showSymbol: false,
             yAxisIndex: item.yAxisIndex || 0,
             data: item.values,
-            itemStyle: {
-              color: ['#1677ff', '#52c41a', '#faad14', '#ff4d4f', '#722ed1'][index % 5]
-            },
-            lineStyle: {width: 2}
-          }))
-        }, true)
-        chart.resize()
-        return chart
-      })
-      .filter(Boolean)
+            itemStyle: { color },
+            lineStyle: { width: 2, color },
+            areaStyle: index === 0
+              ? {
+                  color: {
+                    type: 'linear',
+                    x: 0,
+                    y: 0,
+                    x2: 0,
+                    y2: 1,
+                    colorStops: [
+                      { offset: 0, color: `${color}26` },
+                      { offset: 1, color: `${color}00` }
+                    ]
+                  }
+                }
+              : undefined
+          }
+        })
+      }, true)
+      chart.resize()
+      return chart
+    })
+    .filter(Boolean)
 }
 
 const loadChart = async () => {
@@ -367,27 +442,82 @@ onBeforeUnmount(() => {
  * 全局 .ant-card{overflow:hidden} 裁掉底部图表（延迟 / 轮询跳过）。
  */
 .collect-metrics-page {
-  /* 覆盖可能残留的 flex；块级布局让卡片按内容增高，由页面滚动 */
   display: block;
   padding-bottom: 24px;
 }
 
-.collect-metrics-page .page-header {
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 12px;
+.title-block {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 10px;
 }
 
-.collect-metrics-page .page-header > .ant-space {
+.collect-metrics-page .page-header h2 {
   flex-shrink: 0;
 }
 
-.page-subtitle {
-  margin-top: 6px;
-  padding-left: 16px;
-  color: #8c8c8c;
+.device-name {
+  min-width: 0;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--omes-color-text-secondary);
+}
+
+.source-tag {
+  flex-shrink: 0;
+  margin-inline-end: 0;
+}
+
+.toolbar-card {
+  margin-bottom: 12px;
+  border-radius: var(--omes-border-radius-large, 8px);
+  background: var(--omes-gradient-toolbar, var(--omes-color-bg-elevated));
+}
+
+.toolbar-card :deep(.ant-card-body) {
+  padding: 10px 14px;
+}
+
+.toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.toolbar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  min-width: 0;
+}
+
+.meta-item {
   font-size: 13px;
-  line-height: 1.5;
+  color: var(--omes-color-text-secondary);
+}
+
+.meta-item.muted {
+  color: var(--omes-color-text-tertiary);
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.toolbar-select {
+  width: 140px;
 }
 
 .section-card {
@@ -395,7 +525,7 @@ onBeforeUnmount(() => {
 }
 
 .info-row {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   align-items: stretch;
 }
 
@@ -406,41 +536,127 @@ onBeforeUnmount(() => {
 .info-card {
   width: 100%;
   height: 100%;
+  border-radius: var(--omes-border-radius-large, 8px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.info-card :deep(.ant-card-head) {
+  min-height: 40px;
+  padding: 0 14px;
+  background: var(--omes-color-bg-spotlight);
+  border-bottom: 1px solid var(--omes-color-border);
+}
+
+.info-card :deep(.ant-card-head-title) {
+  padding: 10px 0;
+}
+
+.info-card :deep(.ant-card-body) {
+  padding: 12px 14px;
+}
+
+.info-card-title {
+  font-size: 13px;
+  font-weight: var(--omes-font-weight-semibold);
+  color: var(--omes-color-text-heading);
+}
+
+.info-desc :deep(.ant-descriptions-item-label) {
+  width: 96px;
+  color: var(--omes-color-text-tertiary);
+}
+
+.info-desc :deep(.ant-descriptions-item-content) {
+  color: var(--omes-color-text);
 }
 
 .chart-card {
-  /* 避免全局 .ant-card{overflow:hidden} 在异常高度约束下裁切图表 */
   overflow: visible;
+  border-radius: var(--omes-border-radius-large, 8px);
+}
+
+.chart-card :deep(.ant-card-head) {
+  min-height: 44px;
+  padding: 0 16px;
+  background: var(--omes-color-bg-spotlight);
+  border-bottom: 1px solid var(--omes-color-border-secondary);
+}
+
+.chart-card :deep(.ant-card-head-title) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: var(--omes-font-weight-semibold);
+  color: var(--omes-color-text-heading);
+}
+
+.section-meta {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--omes-color-text-tertiary);
 }
 
 .chart-card :deep(.ant-card-body) {
-  padding: 16px;
+  padding: 14px 16px;
   overflow: visible;
+  background: var(--omes-color-bg-elevated);
 }
 
 .chart-card :deep(.ant-card-body > .ant-empty) {
   padding: 48px 0;
+  background: var(--omes-color-bg-container);
+  border: 1px dashed var(--omes-color-border-secondary);
+  border-radius: 8px;
 }
 
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 12px;
   width: 100%;
 }
 
 .metrics-chart-wrap {
   min-width: 0;
-  min-height: 320px;
-  border: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--omes-color-border-secondary);
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--omes-color-bg-container);
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.metrics-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--omes-color-border);
+  background: var(--omes-color-bg-spotlight);
+}
+
+.metrics-chart-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--omes-color-text);
+}
+
+.metrics-chart-unit {
+  font-size: 12px;
+  color: var(--omes-color-text-tertiary);
 }
 
 .metrics-chart {
   width: 100%;
-  height: 320px;
+  height: 300px;
   min-width: 0;
 }
 
@@ -448,24 +664,34 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 320px;
+  min-height: 300px;
   margin: 0;
 }
 
 .text-warning {
-  color: #faad14;
-  font-weight: 600;
+  color: var(--omes-color-warning);
+  font-weight: var(--omes-font-weight-semibold);
 }
 
 .metric-hint {
   display: block;
   margin-top: 4px;
   font-size: 12px;
-  color: #8c8c8c;
+  color: var(--omes-color-text-tertiary);
   font-weight: normal;
 }
 
 @media screen and (max-width: 992px) {
+  .toolbar-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .toolbar-select {
+    flex: 1;
+    min-width: 120px;
+  }
+
   .chart-grid {
     grid-template-columns: 1fr;
   }

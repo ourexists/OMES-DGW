@@ -137,6 +137,25 @@ spring:
 | `COLLECT_POINT_WRITE_ENABLED` | true | `app.collect.point-write.enabled` | 是否执行控制写入任务 |
 | `COLLECT_POINT_WRITE_IDLE_POLL_MS` | 500 | `app.collect.point-write.idle-poll-interval-ms` | 无指令时空闲轮询间隔 |
 
+#### MQTT推送（盒子 / 中控均支持）
+
+实时缓存每写入一台设备快照，即异步向 Broker 推送 **一条** JSON 消息（不含采集配置大字段）。`NORTHBOUND_MQTT_ENABLED=false` 时不建连、不推送。修改后需重启生效。
+
+| 环境变量 | 默认 | 对应 yml 路径 | 说明 |
+|----------|------|---------------|------|
+| `NORTHBOUND_MQTT_ENABLED` | false | `app.northbound.mqtt.enabled` | MQTT推送总开关 |
+| `NORTHBOUND_MQTT_BROKER_URL` | tcp://127.0.0.1:1883 | `app.northbound.mqtt.broker-url` | Broker 地址 |
+| `NORTHBOUND_MQTT_CLIENT_ID` | （空=自动生成） | `app.northbound.mqtt.client-id` | 客户端 ID |
+| `NORTHBOUND_MQTT_USERNAME` | | `app.northbound.mqtt.username` | 用户名（可选） |
+| `NORTHBOUND_MQTT_PASSWORD` | | `app.northbound.mqtt.password` | 密码（可选） |
+| `NORTHBOUND_MQTT_TOPIC` | omes/dgw/realtime/{deviceCode} | `app.northbound.mqtt.topic` | 主题模板：`{deviceId}` `{deviceCode}` `{protocol}` |
+| `NORTHBOUND_MQTT_QOS` | 0 | `app.northbound.mqtt.qos` | QoS 0/1/2 |
+| `NORTHBOUND_MQTT_RETAINED` | false | `app.northbound.mqtt.retained` | 是否 retain |
+| `NORTHBOUND_MQTT_CONNECTION_TIMEOUT_SEC` | 10 | `app.northbound.mqtt.connection-timeout-sec` | 连接超时 |
+| `NORTHBOUND_MQTT_KEEP_ALIVE_SEC` | 60 | `app.northbound.mqtt.keep-alive-interval-sec` | KeepAlive |
+| `NORTHBOUND_MQTT_AUTO_RECONNECT` | true | `app.northbound.mqtt.automatic-reconnect` | 自动重连 |
+| `NORTHBOUND_MQTT_PUBLISH_QUEUE_CAPACITY` | 2000 | `app.northbound.mqtt.publish-queue-capacity` | 异步推送队列上限 |
+
 #### InfluxDB 2.x
 
 | 环境变量 | 默认 | 对应 yml 路径 | 说明 |

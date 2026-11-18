@@ -1,16 +1,16 @@
 <template>
   <div class="page-container settings-page">
-    <div class="page-hero">
-      <div class="page-hero__text">
+    <div class="page-header">
+      <div class="page-header__title">
         <h2>系统配置</h2>
-        <p>管理运行参数与存储连接配置。</p>
+        <p class="page-header__desc">管理运行参数与存储连接配置。</p>
       </div>
       <a-space>
-      <a-button :loading="loading" :disabled="restarting" @click="refreshAll">
-        <ReloadOutlined />
-        刷新
-      </a-button>
-      <a-button danger :loading="restarting" @click="confirmRestart">系统重启</a-button>
+        <a-button :loading="loading" :disabled="restarting" @click="refreshAll">
+          <ReloadOutlined />
+          刷新
+        </a-button>
+        <a-button danger :loading="restarting" @click="confirmRestart">系统重启</a-button>
       </a-space>
     </div>
 
@@ -58,7 +58,7 @@
                   section-id="cache-flush"
                   compact
                   hide-description
-                  
+                  @saved="onCacheFlushSaved"
                 >
                   <template #field="{ field, values }">
                     <ChoiceCards v-model="values[field.key]" :label="field.label" :options="cacheChoices(field)" />
@@ -66,9 +66,11 @@
                   <template #before-footer="{ values }">
                     <div v-if="values.COLLECT_STORE_BACKEND === 'redis'" class="backend-details">
                       <ConfigSectionForm
+                        ref="redisFormRef"
                         section-id="redis"
                         compact
                         hide-description
+                        hide-footer
                       />
                     </div>
                   </template>
@@ -79,26 +81,20 @@
               <ConfigSectionForm
                 ref="formRef"
                 section-id="influx"
-                :visible-keys="['COLLECT_MONITOR_TYPE']"
                 compact
                 hide-description
+                :reveal-groups-when="{
+                  watchKey: 'COLLECT_MONITOR_TYPE',
+                  equals: 'influxdb',
+                  groups: ['连接管理', '历史落库', '指标落库']
+                }"
               >
-                <template #field="{ field, values }">
+                <template #field-COLLECT_MONITOR_TYPE="{ field, values }">
                   <ChoiceCards
                     v-model="values[field.key]"
                     :label="field.label"
                     :options="backendChoices['monitor-collect']"
                   />
-                </template>
-                <template #before-footer="{ values }">
-                  <div v-if="values.COLLECT_MONITOR_TYPE === 'influxdb'" class="backend-details">
-                    <ConfigSectionForm
-                      section-id="influx"
-                      :visible-groups="['连接管理', '历史落库', '指标落库']"
-                      compact
-                      hide-description
-                    />
-                  </div>
                 </template>
               </ConfigSectionForm>
             </template>
@@ -123,6 +119,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import {
+  ApiOutlined,
   CloudServerOutlined,
   ControlOutlined,
   DatabaseOutlined,
@@ -213,29 +210,33 @@ onUnmounted(() => {
 const sections = ref([])
 const activeTab = ref('')
 const formRef = ref(null)
-const monitorEnabled = values => values.COLLECT_MONITOR_TYPE === 'influxdb'
+const redisFormRef = ref(null)
 const cacheChoices = field => (field.options || []).map(value =>
   backendChoices['cache-flush'].find(option => option.value === value) || { value, label: value, description: '' }
 )
 
+const onCacheFlushSaved = async () => {
+  await redisFormRef.value?.save?.({ quiet: true })
+}
+
 const metaMap = {
   'data-store': {
     icon: DatabaseOutlined,
-    iconBg: 'rgba(82, 196, 26, 0.12)',
-    iconColor: '#389e0d',
+    iconBg: 'color-mix(in srgb, var(--omes-color-success) 14%, transparent)',
+    iconColor: 'var(--omes-color-success)',
     shortDesc: 'SQLite 路径与迁移'
   },
   'cache-flush': {
     icon: ThunderboltOutlined,
-    iconBg: 'rgba(220, 38, 38, 0.1)',
-    iconColor: '#dc2626',
+    iconBg: 'color-mix(in srgb, var(--omes-color-error) 12%, transparent)',
+    iconColor: 'var(--omes-color-error)',
     shortDesc: '缓存后端与 Redis 连接',
     description: '选择实时缓存后端；Redis 连接参数在下方展开。'
   },
   'monitor-collect': {
     icon: CloudServerOutlined,
-    iconBg: 'rgba(22, 119, 255, 0.1)',
-    iconColor: '#1677ff',
+    iconBg: 'var(--omes-color-primary-bg)',
+    iconColor: 'var(--omes-color-primary)',
     shortDesc: 'Influx 连接与落库',
     title: '监控采集',
     description: '选择监控采集类型；Influx 连接与落库参数在下方展开。',
@@ -243,21 +244,27 @@ const metaMap = {
   },
   'collect-runtime': {
     icon: RadarChartOutlined,
-    iconBg: 'rgba(22, 119, 255, 0.12)',
-    iconColor: '#1677ff',
+    iconBg: 'var(--omes-color-primary-bg)',
+    iconColor: 'var(--omes-color-primary)',
     shortDesc: '调度 / 连接 / 协议 / 离线'
   },
   observability: {
     icon: HeartOutlined,
-    iconBg: 'rgba(250, 173, 20, 0.14)',
-    iconColor: '#d48806',
+    iconBg: 'color-mix(in srgb, var(--omes-color-warning) 14%, transparent)',
+    iconColor: 'var(--omes-color-warning)',
     shortDesc: '诊断日志与运行指标'
   },
   'status-control': {
     icon: ControlOutlined,
-    iconBg: 'rgba(114, 46, 209, 0.12)',
-    iconColor: '#722ed1',
+    iconBg: 'color-mix(in srgb, var(--omes-color-accent-purple-from) 14%, transparent)',
+    iconColor: 'var(--omes-color-accent-purple-from)',
     shortDesc: '在线事件与点位写入'
+  },
+  'northbound-mqtt': {
+    icon: ApiOutlined,
+    iconBg: 'color-mix(in srgb, var(--omes-color-accent-cyan-to) 14%, transparent)',
+    iconColor: 'var(--omes-color-accent-cyan-from)',
+    shortDesc: '设备实时数据 MQTT 推送'
   }
 }
 
@@ -269,8 +276,8 @@ const navItems = computed(() => {
   const items = builtinSections.value.map(item => {
     const meta = metaMap[item.id] || {
       icon: ControlOutlined,
-      iconBg: 'rgba(0,0,0,0.06)',
-      iconColor: '#595959',
+      iconBg: 'var(--omes-color-bg-muted)',
+      iconColor: 'var(--omes-color-text-tertiary)',
       shortDesc: item.description || ''
     }
     return {
@@ -330,28 +337,9 @@ onMounted(loadSections)
   box-sizing: border-box;
 }
 
-.page-hero {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
+.settings-page .page-header {
   flex: 0 0 auto;
-}
-
-.page-hero__text h2 {
-  margin: 0 0 6px;
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--omes-color-text, rgba(0, 0, 0, 0.88));
-}
-
-.page-hero__text p {
-  margin: 0;
-  max-width: 680px;
-  color: var(--omes-color-text-secondary, rgba(0, 0, 0, 0.45));
-  font-size: 14px;
-  line-height: 1.6;
+  align-items: flex-start;
 }
 
 .settings-main {
@@ -391,10 +379,9 @@ onMounted(loadSections)
   flex-direction: column;
   gap: 6px;
   padding: 10px;
-  background: var(--omes-color-bg-container, #fff);
-  border: 1px solid var(--omes-fluent-divider, rgba(0, 0, 0, 0.06));
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  background: var(--omes-color-bg-container);
+  border-radius: var(--omes-border-radius-x-large);
+  box-shadow: var(--omes-fluent-surface-shadow);
   overflow: auto;
 }
 
@@ -403,9 +390,9 @@ onMounted(loadSections)
   align-items: flex-start;
   gap: 10px;
   width: 100%;
-  padding: 10px 10px;
+  padding: 10px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--omes-border-radius-medium);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -413,17 +400,17 @@ onMounted(loadSections)
 }
 
 .settings-nav__item:hover {
-  background: var(--omes-color-bg-muted, #f7f8fa);
+  background: var(--omes-color-bg-muted);
 }
 
 .settings-nav__item.is-active {
-  background: var(--omes-color-primary-bg, rgba(22, 119, 255, 0.08));
+  background: var(--omes-color-primary-bg);
 }
 
 .settings-nav__icon {
   width: 34px;
   height: 34px;
-  border-radius: 9px;
+  border-radius: var(--omes-border-radius-medium);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -440,13 +427,13 @@ onMounted(loadSections)
 
 .settings-nav__title {
   font-size: 14px;
-  font-weight: 600;
-  color: var(--omes-color-text, rgba(0, 0, 0, 0.88));
+  font-weight: var(--omes-font-weight-semibold);
+  color: var(--omes-color-text);
 }
 
 .settings-nav__desc {
   font-size: 12px;
-  color: var(--omes-color-text-tertiary, rgba(0, 0, 0, 0.4));
+  color: var(--omes-color-text-tertiary);
   line-height: 1.4;
 }
 
@@ -456,10 +443,9 @@ onMounted(loadSections)
   min-width: 0;
   min-height: 0;
   height: 100%;
-  background: var(--omes-color-bg-container, #fff);
-  border: 1px solid var(--omes-fluent-divider, rgba(0, 0, 0, 0.06));
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  background: var(--omes-color-bg-container);
+  border-radius: var(--omes-border-radius-x-large);
+  box-shadow: var(--omes-fluent-surface-shadow);
   overflow: hidden;
 }
 
@@ -469,23 +455,23 @@ onMounted(loadSections)
   justify-content: space-between;
   gap: 12px;
   padding: 18px 20px 14px;
-  border-bottom: 1px solid var(--omes-fluent-divider, rgba(0, 0, 0, 0.06));
-  background: linear-gradient(180deg, #fcfcfd 0%, #fff 100%);
+  border-bottom: 1px solid var(--omes-fluent-divider);
+  background: var(--omes-gradient-card-head);
   flex: 0 0 auto;
 }
 
 .settings-panel__head h3 {
   margin: 0 0 4px;
   font-size: 16px;
-  font-weight: 600;
-  color: var(--omes-color-text, rgba(0, 0, 0, 0.88));
+  font-weight: var(--omes-font-weight-semibold);
+  color: var(--omes-color-text);
 }
 
 .settings-panel__head p {
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--omes-color-text-secondary, rgba(0, 0, 0, 0.45));
+  color: var(--omes-color-text-secondary);
 }
 
 .settings-panel__body {
@@ -501,9 +487,8 @@ onMounted(loadSections)
 .panel-block + .panel-block {
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid var(--omes-fluent-divider, rgba(0, 0, 0, 0.06));
+  border-top: 1px solid var(--omes-fluent-divider);
 }
-
 
 .backend-details {
   margin-bottom: 16px;
@@ -512,15 +497,15 @@ onMounted(loadSections)
 .panel-block__title {
   margin: 4px 0 12px;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--omes-color-text-secondary, rgba(0, 0, 0, 0.65));
+  font-weight: var(--omes-font-weight-semibold);
+  color: var(--omes-color-text-secondary);
 }
 
 .panel-block__hint {
   margin: 0 0 12px;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--omes-color-text-tertiary, rgba(0, 0, 0, 0.45));
+  color: var(--omes-color-text-tertiary);
 }
 
 @media (max-width: 960px) {
@@ -552,10 +537,6 @@ onMounted(loadSections)
 
   .settings-panel__body {
     overflow: visible;
-  }
-
-  .page-hero {
-    flex-direction: column;
   }
 }
 

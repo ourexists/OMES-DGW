@@ -35,7 +35,8 @@ public final class RuntimeConfigCatalog {
                     dataStore(),
                     collectRuntime(),
                     observability(),
-                    statusControl()
+                    statusControl(),
+                    northboundMqtt()
             );
         }
         return List.of(
@@ -44,6 +45,7 @@ public final class RuntimeConfigCatalog {
                 collectRuntime(),
                 observability(),
                 statusControl(),
+                northboundMqtt(),
                 redis(),
                 influx()
         );
@@ -189,6 +191,49 @@ public final class RuntimeConfigCatalog {
                                         .withGroup("控制点位写入"),
                                 integer("COLLECT_POINT_WRITE_IDLE_POLL_MS", "空闲轮询间隔(ms)", "500", null)
                                         .withGroup("控制点位写入")
+                        )
+                )
+        );
+    }
+
+    private static ConfigSectionDef northboundMqtt() {
+        return new ConfigSectionDef(
+                "northbound-mqtt",
+                "MQTT推送",
+                "将设备实时数据推送到 MQTT Broker（每设备一条消息）；关闭开关后不建连、不推送",
+                "builtin",
+                concat(
+                        List.of(
+                                bool("NORTHBOUND_MQTT_ENABLED", "启用 MQTT推送", "false", "关闭时不连接 Broker、不推送；修改后需重启生效")
+                                        .withGroup("开关"),
+                                string("NORTHBOUND_MQTT_BROKER_URL", "Broker 地址", "tcp://127.0.0.1:1883",
+                                        "如 tcp://host:1883 或 ssl://host:8883")
+                                        .withGroup("连接"),
+                                string("NORTHBOUND_MQTT_CLIENT_ID", "客户端 ID", "", "留空则自动生成 omes-dgw-{门户}-{随机}")
+                                        .withGroup("连接"),
+                                string("NORTHBOUND_MQTT_USERNAME", "用户名", "", "可选")
+                                        .withGroup("连接"),
+                                password("NORTHBOUND_MQTT_PASSWORD", "密码", "留空保存表示不修改")
+                                        .withGroup("连接")
+                        ),
+                        List.of(
+                                string("NORTHBOUND_MQTT_TOPIC", "主题模板", "omes/dgw/realtime/{deviceCode}",
+                                        "占位符：{deviceId} {deviceCode} {protocol}")
+                                        .withGroup("消息"),
+                                select("NORTHBOUND_MQTT_QOS", "QoS", "0",
+                                        List.of("0", "1", "2"), "0=至多一次；1=至少一次；2=恰好一次")
+                                        .withGroup("消息"),
+                                bool("NORTHBOUND_MQTT_RETAINED", "Retain", "false", "Broker 是否保留最后一条消息")
+                                        .withGroup("消息"),
+                                integer("NORTHBOUND_MQTT_CONNECTION_TIMEOUT_SEC", "连接超时(秒)", "10", null)
+                                        .withGroup("高级"),
+                                integer("NORTHBOUND_MQTT_KEEP_ALIVE_SEC", "KeepAlive(秒)", "60", null)
+                                        .withGroup("高级"),
+                                bool("NORTHBOUND_MQTT_AUTO_RECONNECT", "自动重连", "true", null)
+                                        .withGroup("高级"),
+                                integer("NORTHBOUND_MQTT_PUBLISH_QUEUE_CAPACITY", "推送队列上限", "2000",
+                                        "满则丢弃新消息，避免阻塞采集")
+                                        .withGroup("高级")
                         )
                 )
         );

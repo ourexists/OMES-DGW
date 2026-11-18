@@ -32,6 +32,12 @@ export const APP_MENUS = [
     title: '系统配置',
     path: '/system/runtime-config',
     icon: 'setting'
+  },
+  {
+    id: 'system-log-monitor',
+    title: '日志监控',
+    path: '/system/log-monitor',
+    icon: 'file-text'
   }
 ]
 

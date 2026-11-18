@@ -194,26 +194,24 @@ public class FinsTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
     }
 
     /**
-     * 握手后读一个点验证：与轮询一致，避免「测试成功但采集读点全失败」。
+     * 握手后若已配置点位，读第一个点验证，避免「测试成功但采集读点全失败」。
+     * 无点位时只确认握手，不另读 DM0。
      */
     private void verifyReadableAfterHandshake(FinsTcpClient client, ProtocolConnect connect) throws Exception {
-        if (StringUtils.hasText(connect.getId())) {
-            DeviceRealtimeObj cached = getDeviceCache(connect.getId());
-            if (cached != null) {
-                Map<String, DevicePoint> points = DevicePointConfigSupport.toPointsByName(cached);
-                if (!points.isEmpty()) {
-                    DevicePoint first = points.values().iterator().next();
-                    DeviceCollectConfig config = DevicePointConfigSupport.normalize(cached.getCollectConfig());
-                    readTag(client, resolveTagAddress(first), first, config.getModbusByteOrder());
-                    return;
-                }
-            }
+        if (!StringUtils.hasText(connect.getId())) {
+            return;
         }
-        try {
-            client.readWords(0x82, 0, 1);
-        } catch (IOException e) {
-            throw new IOException("读验证失败(DM0): " + e.getMessage() + "；请检查点位地址或数据区权限", e);
+        DeviceRealtimeObj cached = getDeviceCache(connect.getId());
+        if (cached == null) {
+            return;
         }
+        Map<String, DevicePoint> points = DevicePointConfigSupport.toPointsByName(cached);
+        if (points.isEmpty()) {
+            return;
+        }
+        DevicePoint first = points.values().iterator().next();
+        DeviceCollectConfig config = DevicePointConfigSupport.normalize(cached.getCollectConfig());
+        readTag(client, resolveTagAddress(first), first, config.getModbusByteOrder());
     }
 
     @Override

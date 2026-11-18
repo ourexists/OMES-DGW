@@ -39,7 +39,7 @@
           title="在线"
           :value="overview.devices.online"
           suffix="台"
-          :value-style="{ color: '#52c41a' }"
+          :value-style="{ color: 'var(--omes-color-success)' }"
         />
       </a-card>
       <a-card size="small" class="stat-flow-item">
@@ -47,7 +47,7 @@
           title="离线"
           :value="overview.devices.offline"
           suffix="台"
-          :value-style="{ color: '#8c8c8c' }"
+          :value-style="{ color: 'var(--omes-color-text-tertiary)' }"
         />
       </a-card>
       <a-card size="small" class="stat-flow-item">
@@ -55,7 +55,7 @@
           title="连接建立"
           :value="overview.devices.connectionConnected"
           suffix="台"
-          :value-style="{ color: '#1677ff' }"
+          :value-style="{ color: 'var(--omes-color-primary)' }"
         />
       </a-card>
       <a-card size="small" class="stat-flow-item">
@@ -63,7 +63,7 @@
           title="连接中断/熔断"
           :value="overview.devices.connectionDisconnected + overview.devices.connectionCircuitAbandoned"
           suffix="台"
-          :value-style="{ color: '#faad14' }"
+          :value-style="{ color: 'var(--omes-color-warning)' }"
         />
       </a-card>
       <a-card size="small" class="stat-flow-item">
@@ -398,7 +398,7 @@ const renderChart = async charts => {
           yAxisIndex: item.yAxisIndex || 0,
           data: item.values,
           itemStyle: {
-            color: ['#1677ff', '#52c41a', '#faad14', '#ff4d4f', '#722ed1'][index % 5]
+            color: ['#0078d4', '#5c2e91', '#038387', '#bf0077', '#eaa300'][index % 5]
           },
           lineStyle: { width: 2 }
         }))
@@ -538,7 +538,7 @@ onBeforeUnmount(() => {
 .queue-trimmed {
   margin-top: 4px;
   font-size: 12px;
-  color: #faad14;
+  color: var(--omes-color-warning);
 }
 
 .chart-grid {
@@ -552,7 +552,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   min-height: 320px;
   border: 1px solid var(--omes-color-border-secondary);
-  border-radius: 8px;
+  border-radius: var(--omes-border-radius-x-large);
   background: var(--omes-color-bg-elevated);
   overflow: hidden;
 }
@@ -578,7 +578,7 @@ onBeforeUnmount(() => {
 }
 
 .text-warning {
-  color: #faad14;
-  font-weight: 600;
+  color: var(--omes-color-warning);
+  font-weight: var(--omes-font-weight-semibold);
 }
 </style>

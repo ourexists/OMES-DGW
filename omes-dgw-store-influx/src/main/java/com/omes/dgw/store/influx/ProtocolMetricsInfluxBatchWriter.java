@@ -1,6 +1,5 @@
 package com.omes.dgw.store.influx;
 
-import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import com.omes.dgw.metrics.MetricsInfluxWriteLeader;
@@ -8,7 +7,6 @@ import com.omes.dgw.metrics.MetricsInstanceIdProvider;
 import com.omes.dgw.metrics.ProtocolMetricsHistoryStore;
 import com.omes.dgw.metrics.ProtocolMetricsHistoryWriter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.util.StringUtils;
 
@@ -17,7 +15,6 @@ import java.util.List;
 
 @Slf4j
 @ConditionalOnProperty(prefix = "app.collect.metrics", name = "persist-to-influx", havingValue = "true")
-@ConditionalOnBean(InfluxDBClient.class)
 public class ProtocolMetricsInfluxBatchWriter implements ProtocolMetricsHistoryWriter {
 
     private final InfluxConnectionService influx;

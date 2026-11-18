@@ -1,13 +1,14 @@
 <template>
   <div class="page-container history-chart-page">
     <div class="page-header">
-      <h2>历史曲线 - {{deviceName}}</h2>
-      <a-space>
-        <a-tag v-if="pointHistoryAvailable" color="blue">Influx 历史</a-tag>
-        <a-button @click="goBack">
-          <LeftOutlined /> 返回
-        </a-button>
-      </a-space>
+      <div class="title-block">
+        <h2>历史曲线</h2>
+        <span class="device-name" :title="deviceName">{{ deviceName }}</span>
+        <a-tag v-if="pointHistoryAvailable" class="source-tag" color="blue">Influx 历史</a-tag>
+      </div>
+      <a-button @click="goBack">
+        <LeftOutlined /> 返回
+      </a-button>
     </div>
 
     <a-result
@@ -22,109 +23,117 @@
     </a-result>
 
     <template v-else>
-    <a-card class="toolbar-card" size="small">
-      <a-form class="filter-form" layout="inline" :model="searchForm">
-        <a-form-item v-if="analogPointOptions.length" label="曲线点位">
-          <a-select
-            v-model:value="searchForm.pointNames"
-            mode="multiple"
-            allow-clear
-            max-tag-count="responsive"
-            :options="analogPointOptions"
-            placeholder="请选择曲线点位"
-            style="min-width: 180px; max-width: 280px; width: 220px"
-          />
-        </a-form-item>
-        <a-form-item v-if="boolPointOptions.length" label="开关量">
-          <a-select
-            v-model:value="searchForm.boolPointNames"
-            mode="multiple"
-            allow-clear
-            max-tag-count="responsive"
-            :options="boolPointOptions"
-            placeholder="请选择开关量点位"
-            style="min-width: 180px; max-width: 280px; width: 220px"
-          />
-        </a-form-item>
-        <a-form-item label="时间段">
-          <a-range-picker
-            v-model:value="searchForm.dateRange"
-            show-time
-            format="YYYY-MM-DD HH:mm"
-            style="width: 340px"
-          />
-        </a-form-item>
-        <a-form-item>
-          <a-button type="primary" :loading="chartLoading" @click="handleSearch">查询</a-button>
-        </a-form-item>
-      </a-form>
-    </a-card>
+      <a-card class="toolbar-card" size="small">
+        <a-form class="filter-form" layout="inline" :model="searchForm">
+          <div class="filter-fields">
+            <a-form-item v-if="analogPointOptions.length" label="曲线点位">
+              <a-select
+                v-model:value="searchForm.pointNames"
+                mode="multiple"
+                allow-clear
+                max-tag-count="responsive"
+                :options="analogPointOptions"
+                placeholder="请选择曲线点位"
+                class="point-select"
+              />
+            </a-form-item>
+            <a-form-item v-if="boolPointOptions.length" label="开关量">
+              <a-select
+                v-model:value="searchForm.boolPointNames"
+                mode="multiple"
+                allow-clear
+                max-tag-count="responsive"
+                :options="boolPointOptions"
+                placeholder="请选择开关量点位"
+                class="point-select"
+              />
+            </a-form-item>
+            <a-form-item label="时间段">
+              <a-range-picker
+                v-model:value="searchForm.dateRange"
+                show-time
+                format="YYYY-MM-DD HH:mm"
+                class="range-picker"
+              />
+            </a-form-item>
+          </div>
+          <a-form-item class="filter-actions">
+            <a-button type="primary" :loading="chartLoading" @click="handleSearch">查询</a-button>
+          </a-form-item>
+        </a-form>
+      </a-card>
 
-    <a-card
-      class="content-card"
-      :tab-list="viewTabs"
-      :active-tab-key="activeTab"
-      @tab-change="handleTabChange"
-    >
-      <a-spin :spinning="chartLoading">
-        <template v-if="activeTab === 'chart'">
-          <div v-if="!chartData.length && !ganttRows.length" class="chart-empty">
-            <a-empty description="暂无曲线数据" />
-          </div>
-          <div
-            v-else
-            class="chart-workspace"
-            :class="{ 'has-lines': chartData.length, 'has-gantt': ganttRows.length }"
-          >
-            <section v-if="chartData.length" class="chart-panel line-panel">
-              <div class="chart-panel-head">数值曲线</div>
-              <div class="line-charts" :class="{ single: chartData.length === 1 }">
-                <div
-                  v-for="(item, index) in chartData"
-                  :key="`${item.key || item.name}-${index}`"
-                  class="line-chart-item"
-                >
-                  <div class="line-chart-title">
-                    {{ item.unit ? `${item.name}（${item.unit}）` : (item.title || item.name) }}
-                  </div>
-                  <div :ref="el => setChartRef(el, index)" class="temperature-chart"></div>
+      <a-card
+        class="content-card"
+        :tab-list="viewTabs"
+        :active-tab-key="activeTab"
+        @tab-change="handleTabChange"
+      >
+        <a-spin :spinning="chartLoading">
+          <template v-if="activeTab === 'chart'">
+            <div v-if="!chartData.length && !ganttRows.length" class="chart-empty">
+              <a-empty description="暂无曲线数据" />
+            </div>
+            <div
+              v-else
+              class="chart-workspace"
+              :class="{ 'has-lines': chartData.length, 'has-gantt': ganttRows.length }"
+            >
+              <section v-if="chartData.length" class="chart-panel line-panel">
+                <div class="chart-panel-head">
+                  <span>数值曲线</span>
+                  <span v-if="chartData.length > 1" class="panel-meta">{{ chartData.length }} 条</span>
                 </div>
-              </div>
-            </section>
-            <section v-if="ganttRows.length" class="chart-panel gantt-panel">
-              <div class="chart-panel-head">
-                <span>开关量甘特图</span>
-                <span class="gantt-legend">
-                  <i class="gantt-swatch on"></i>开
-                  <i class="gantt-swatch off"></i>关
-                </span>
-              </div>
-              <div ref="ganttEl" class="gantt-chart" :style="{ height: ganttHeight }"></div>
-            </section>
+                <div class="line-charts" :class="{ single: chartData.length === 1 }">
+                  <div
+                    v-for="(item, index) in chartData"
+                    :key="`${item.key || item.name}-${index}`"
+                    class="line-chart-item"
+                  >
+                    <div class="line-chart-title">
+                      <span class="series-dot" :style="{ background: LINE_COLORS[index % LINE_COLORS.length] }" />
+                      <span class="series-name" :title="item.name || item.title">
+                        {{ item.unit ? `${item.name}（${item.unit}）` : (item.title || item.name) }}
+                      </span>
+                    </div>
+                    <div :ref="el => setChartRef(el, index)" class="temperature-chart"></div>
+                  </div>
+                </div>
+              </section>
+              <section v-if="ganttRows.length" class="chart-panel gantt-panel">
+                <div class="chart-panel-head">
+                  <span>开关量甘特图</span>
+                  <span class="gantt-legend">
+                    <i class="gantt-swatch on"></i>开
+                    <i class="gantt-swatch off"></i>关
+                  </span>
+                </div>
+                <div ref="ganttEl" class="gantt-chart" :style="{ height: ganttHeight }"></div>
+              </section>
+            </div>
+          </template>
+          <div v-else class="history-table-wrap">
+            <a-table
+              :columns="historyColumns"
+              :data-source="historyList"
+              :pagination="{ pageSize: 20, showSizeChanger: true, showTotal: total => `共 ${total} 条` }"
+              :scroll="{ x: historyTableScrollX, y: 'calc(100% - 44px)' }"
+              sticky
+              size="small"
+              row-key="key"
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'time'">
+                  {{ formatTableTime(record.time) }}
+                </template>
+                <template v-if="column.pointName">
+                  {{ formatValue(record.values?.[column.pointName], column.meta) }}
+                </template>
+              </template>
+            </a-table>
           </div>
-        </template>
-        <div v-else class="history-table-wrap">
-          <a-table
-            :columns="historyColumns"
-            :data-source="historyList"
-            :pagination="{ pageSize: 20, showSizeChanger: true, showTotal: total => `共 ${total} 条` }"
-            :scroll="{ x: historyTableScrollX, y: 'calc(100% - 44px)' }"
-            sticky
-            size="small"
-            row-key="key"
-          >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'time'">
-                {{ formatTableTime(record.time) }}
-              </template>
-              <template v-if="column.pointName">
-                {{ formatValue(record.values?.[column.pointName], column.meta) }}
-              </template>
-            </template>
-          </a-table>
-        </div>
-      </a-spin>
-    </a-card>
+        </a-spin>
+      </a-card>
     </template>
   </div>
 </template>
@@ -146,9 +155,9 @@ const { pointHistoryAvailable } = storeToRefs(portalStore)
 
 const BOOL_DATA_TYPES = new Set(['BOOL', 'BOOL_INV'])
 const COLLECT_ACCESS_TYPES = ['READ_ONLY', 'READ_WRITE']
-const GANTT_ON_COLOR = '#52c41a'
-const GANTT_OFF_COLOR = '#d9d9d9'
-const LINE_COLORS = ['#1677ff', '#52c41a', '#faad14', '#f5222d']
+const GANTT_ON_COLOR = '#107c10'
+const GANTT_OFF_COLOR = '#e0e0e0'
+const LINE_COLORS = ['#0078d4', '#5c2e91', '#038387', '#eaa300']
 const viewTabs = [
   { key: 'chart', tab: '历史曲线' },
   { key: 'table', tab: '历史数据' }
@@ -414,11 +423,12 @@ const renderGantt = async (rows, startTime, endTime) => {
       max: endMs ?? undefined,
       axisLabel: {
         hideOverlap: true,
-        color: '#5a6578',
+        color: '#616161',
+        fontSize: 11,
         formatter: value => dayjs(value).format('HH:mm:ss')
       },
-      axisLine: { lineStyle: { color: '#dcdfe6' } },
-      splitLine: { show: true, lineStyle: { color: '#f0f0f0' } }
+      axisLine: { lineStyle: { color: '#e0e0e0' } },
+      splitLine: { show: true, lineStyle: { color: '#f0f0f0', type: 'dashed' } }
     },
     yAxis: {
       type: 'category',
@@ -427,7 +437,7 @@ const renderGantt = async (rows, startTime, endTime) => {
       axisTick: { show: false },
       axisLine: { show: false },
       axisLabel: {
-        color: '#1a1d23',
+        color: '#242424',
         width: 88,
         overflow: 'truncate'
       }
@@ -438,8 +448,8 @@ const renderGantt = async (rows, startTime, endTime) => {
       height: 14,
       bottom: 4,
       borderColor: 'transparent',
-      backgroundColor: '#f5f7fa',
-      fillerColor: 'rgba(22, 119, 255, 0.16)',
+      backgroundColor: '#f5f5f5',
+      fillerColor: 'rgba(0, 120, 212, 0.16)',
       handleSize: 12
     }],
     series: [
@@ -505,10 +515,10 @@ const renderCharts = async (charts, startTime, endTime) => {
           }
         },
         grid: {
-          left: 12,
-          right: 12,
-          top: 24,
-          bottom: 8,
+          left: 16,
+          right: 20,
+          top: 16,
+          bottom: 12,
           containLabel: true
         },
         xAxis: {
@@ -517,30 +527,48 @@ const renderCharts = async (charts, startTime, endTime) => {
           max: endMs ?? undefined,
           axisLabel: {
             hideOverlap: true,
-            color: '#5a6578',
+            color: '#616161',
+            fontSize: 11,
             formatter: value => dayjs(value).format('HH:mm:ss')
           },
-          axisLine: { lineStyle: { color: '#dcdfe6' } },
+          axisLine: { lineStyle: { color: '#e0e0e0' } },
+          axisTick: { show: false },
           splitLine: { show: false }
         },
         yAxis: {
           type: 'value',
           name: item.unit || undefined,
-          nameGap: 8,
-          nameTextStyle: { color: '#5a6578', fontSize: 12 },
+          nameGap: 10,
+          nameTextStyle: { color: '#616161', fontSize: 11, align: 'left', padding: [0, 0, 0, 4] },
           scale: true,
-          axisLabel: { color: '#5a6578' },
-          splitLine: { lineStyle: { color: '#f0f0f0' } }
+          axisLabel: { color: '#616161', fontSize: 11 },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } }
         },
         series: [{
           name: item.name,
           type: 'line',
-          smooth: true,
+          smooth: 0.25,
           showSymbol: seriesData.length <= 24,
-          symbolSize: 6,
+          symbol: 'circle',
+          symbolSize: 5,
           data: seriesData,
           itemStyle: { color },
-          lineStyle: { width: 2, color }
+          lineStyle: { width: 2, color },
+          areaStyle: {
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: `${color}33` },
+                { offset: 1, color: `${color}00` }
+              ]
+            }
+          }
         }]
       }, true)
       chartInstance.resize()
@@ -782,33 +810,62 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.history-chart-page .page-header {
   margin-bottom: 0;
 }
 
-.page-header h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--omes-color-primary);
-  border-left: 4px solid var(--omes-color-primary);
-  padding-left: 12px;
-  height: 24px;
-  line-height: 24px;
+.title-block {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 10px;
+}
+
+.history-chart-page .page-header h2 {
+  flex-shrink: 0;
+}
+
+.device-name {
+  min-width: 0;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--omes-color-text-secondary);
+}
+
+.source-tag {
+  flex-shrink: 0;
+  margin-inline-end: 0;
+}
+
+.toolbar-card {
+  border-radius: var(--omes-border-radius-large, 8px);
+  background: var(--omes-gradient-toolbar, var(--omes-color-bg-elevated));
 }
 
 .toolbar-card :deep(.ant-card-body) {
-  padding: 10px 12px;
+  padding: 10px 14px;
 }
 
 .filter-form {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  row-gap: 8px;
+  justify-content: space-between;
+  gap: 8px 12px;
+  width: 100%;
+}
+
+.filter-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 4px;
+  min-width: 0;
+  flex: 1;
 }
 
 .filter-form :deep(.ant-form-item) {
@@ -820,16 +877,39 @@ onBeforeUnmount(() => {
   padding: 0;
 }
 
+.filter-form :deep(.ant-form-item-label > label) {
+  color: var(--omes-color-text-secondary);
+  font-size: 13px;
+}
+
+.filter-actions {
+  margin-inline-end: 0 !important;
+  margin-left: auto;
+}
+
+.point-select {
+  width: 220px;
+  min-width: 180px;
+  max-width: 280px;
+}
+
+.range-picker {
+  width: 340px;
+}
+
 .content-card {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  border-radius: var(--omes-border-radius-large, 8px);
+  overflow: hidden;
 }
 
 .content-card :deep(.ant-card-head) {
-  min-height: 42px;
-  padding: 0 12px;
+  min-height: 44px;
+  padding: 0 16px;
+  background: var(--omes-color-bg-spotlight);
   border-bottom: 1px solid var(--omes-color-border-secondary);
 }
 
@@ -838,13 +918,19 @@ onBeforeUnmount(() => {
   margin: 0;
 }
 
+.content-card :deep(.ant-tabs-tab) {
+  padding: 12px 4px;
+  font-size: 13px;
+}
+
 .content-card :deep(.ant-card-body) {
   flex: 1;
   min-height: 0;
-  padding: 12px;
+  padding: 14px 16px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background: var(--omes-color-bg-container);
 }
 
 .content-card :deep(.ant-card-body::before),
@@ -867,6 +953,9 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--omes-color-bg-elevated);
+  border: 1px dashed var(--omes-color-border-secondary);
+  border-radius: 8px;
 }
 
 .chart-workspace {
@@ -881,23 +970,30 @@ onBeforeUnmount(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  border: 1px solid #eef0f3;
+  border: 1px solid var(--omes-color-border-secondary);
   border-radius: 8px;
-  background: #fff;
+  background: var(--omes-color-bg-container);
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .chart-panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 36px;
-  padding: 0 12px;
+  min-height: 38px;
+  padding: 0 14px;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--omes-color-primary);
-  background: #f7f9fc;
-  border-bottom: 1px solid #eef0f3;
+  font-weight: var(--omes-font-weight-semibold);
+  color: var(--omes-color-text-heading);
+  background: var(--omes-color-bg-spotlight);
+  border-bottom: 1px solid var(--omes-color-border);
+}
+
+.panel-meta {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--omes-color-text-tertiary);
 }
 
 .line-panel {
@@ -911,31 +1007,55 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  padding: 8px;
+  padding: 12px;
   overflow: auto;
+  background: var(--omes-color-bg-elevated);
 }
 
 .line-charts.single {
   grid-template-columns: 1fr;
+  padding: 0;
+  background: transparent;
 }
 
 .line-charts.single .line-chart-item {
   min-height: 100%;
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 .line-chart-item {
   min-width: 0;
-  min-height: 240px;
+  min-height: 260px;
   display: flex;
   flex-direction: column;
-  border: 1px solid #f0f2f5;
-  border-radius: 6px;
-  background: #fff;
+  border: 1px solid var(--omes-color-border);
+  border-radius: 8px;
+  background: var(--omes-color-bg-container);
 }
 
 .line-chart-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-shrink: 0;
-  padding: 8px 12px 0;
+  min-width: 0;
+  padding: 10px 14px 0;
+}
+
+.series-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.series-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 13px;
   font-weight: 600;
   color: var(--omes-color-text);
@@ -944,7 +1064,7 @@ onBeforeUnmount(() => {
 .temperature-chart {
   flex: 1;
   width: 100%;
-  min-height: 200px;
+  min-height: 220px;
 }
 
 .gantt-panel {
@@ -981,11 +1101,11 @@ onBeforeUnmount(() => {
 }
 
 .gantt-swatch.on {
-  background: #52c41a;
+  background: var(--omes-color-chart-palette-5);
 }
 
 .gantt-swatch.off {
-  background: #d9d9d9;
+  background: var(--omes-color-border-secondary);
 }
 
 .gantt-chart {
@@ -1025,5 +1145,25 @@ onBeforeUnmount(() => {
 .history-table-wrap :deep(.ant-table-container),
 .history-table-wrap :deep(.ant-table-body) {
   height: 100%;
+}
+
+@media screen and (max-width: 992px) {
+  .filter-fields {
+    width: 100%;
+  }
+
+  .filter-actions {
+    margin-left: 0;
+  }
+
+  .point-select,
+  .range-picker {
+    width: 100%;
+    max-width: none;
+  }
+
+  .line-charts {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

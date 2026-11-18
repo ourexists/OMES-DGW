@@ -103,76 +103,123 @@
 
     <a-modal
       v-model:open="writeVisible"
-      title="测试写入"
-      width="560px"
+      :title="writeModalTitle"
+      width="640px"
       :mask-closable="false"
-      ok-text="测试"
+      ok-text="测试写入"
       cancel-text="取消"
       :confirm-loading="writeLoading"
       @ok="handleWriteSubmit"
       @cancel="handleWriteCancel"
     >
-      <a-form layout="vertical" :model="writeForm">
-        <a-form-item label="写入方式" required>
-          <a-radio-group v-model:value="writeForm.mode" @change="handleWriteModeChange">
-            <a-radio-button value="configured">已配置属性</a-radio-button>
-            <a-radio-button value="free">自由地址</a-radio-button>
-          </a-radio-group>
-        </a-form-item>
-        <a-form-item v-if="isConfiguredWriteMode" label="写入属性" required>
-          <a-select
-            v-model:value="writeForm.pointCode"
-            show-search
-            allow-clear
-            :options="writePointOptions"
-            :loading="writePointLoading"
-            :filter-option="filterWritePointOption"
-            placeholder="请选择已配置的写入属性"
-            @change="handleWritePointChange"
+      <a-form class="edit-form write-form" layout="vertical" :model="writeForm">
+        <section class="edit-section">
+          <h4 class="edit-section__title">写入方式</h4>
+          <a-form-item>
+            <a-radio-group
+              v-model:value="writeForm.mode"
+              class="write-mode-group"
+              button-style="solid"
+              @change="handleWriteModeChange"
+            >
+              <a-radio-button value="configured">已配置属性</a-radio-button>
+              <a-radio-button value="free">自由地址</a-radio-button>
+            </a-radio-group>
+          </a-form-item>
+          <a-alert
+            v-if="isConfiguredWriteMode && !writePointLoading && writePointOptions.length === 0"
+            type="info"
+            show-icon
+            class="write-empty-alert"
+            message="当前设备未配置可写入点位，可切换到「自由地址」直接填写。"
           />
-          <div v-if="!writePointLoading && writePointOptions.length === 0" class="write-address-tip">
-            当前设备未配置可写入点位，可切换到「自由地址」直接填写。
-          </div>
-        </a-form-item>
-        <a-form-item label="写入地址" :required="!isConfiguredWriteMode">
-          <a-input
-            v-model:value="writeForm.address"
-            :disabled="isConfiguredWriteMode"
-            :placeholder="isConfiguredWriteMode ? '由设定值点位自动带出' : '请输入写入地址'"
-            @blur="handleWriteAddressBlur"
-          />
-          <div class="write-address-tip">{{ writeAddressTip }}</div>
-        </a-form-item>
-        <a-form-item label="数据类型" :required="!isConfiguredWriteMode">
-          <a-select
-            v-model:value="writeForm.dataType"
-            :disabled="isConfiguredWriteMode"
-            :loading="writeDataTypeLoading"
-            :options="writeDataTypeOptions"
-            :placeholder="isConfiguredWriteMode ? '由写入属性自动带出' : '请选择数据类型'"
-          />
-        </a-form-item>
-        <a-form-item label="字节序">
-          <a-select
-            v-model:value="writeForm.byteOrder"
-            :disabled="isConfiguredWriteMode"
-            :loading="writeByteOrderLoading"
-            :options="writeByteOrderOptions"
-            :placeholder="isConfiguredWriteMode ? '由写入属性自动带出' : '请选择字节序'"
-          />
-        </a-form-item>
-        <a-form-item label="缩放系数">
-          <a-input-number
-            v-model:value="writeForm.scaleFactor"
-            :disabled="isConfiguredWriteMode"
-            :min="0"
-            style="width: 100%"
-            :placeholder="isConfiguredWriteMode ? undefined : '可选，默认 1'"
-          />
-        </a-form-item>
-        <a-form-item label="写入值" required>
-          <a-input v-model:value="writeForm.value" placeholder="请输入写入值" />
-        </a-form-item>
+        </section>
+
+        <section class="edit-section">
+          <h4 class="edit-section__title">目标点位</h4>
+          <a-row :gutter="16">
+            <a-col v-if="isConfiguredWriteMode" :span="24">
+              <a-form-item label="写入属性" required>
+                <a-select
+                  v-model:value="writeForm.pointCode"
+                  show-search
+                  allow-clear
+                  :options="writePointOptions"
+                  :loading="writePointLoading"
+                  :filter-option="filterWritePointOption"
+                  placeholder="请选择已配置的写入属性"
+                  @change="handleWritePointChange"
+                />
+              </a-form-item>
+            </a-col>
+            <a-col :span="24">
+              <a-form-item
+                label="写入地址"
+                :required="!isConfiguredWriteMode"
+                :extra="writeAddressTip"
+              >
+                <a-input
+                  v-model:value="writeForm.address"
+                  :disabled="isConfiguredWriteMode"
+                  :placeholder="isConfiguredWriteMode ? '由设定值点位自动带出' : '请输入写入地址'"
+                  @blur="handleWriteAddressBlur"
+                />
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="数据类型" :required="!isConfiguredWriteMode">
+                <a-select
+                  v-model:value="writeForm.dataType"
+                  :disabled="isConfiguredWriteMode"
+                  :loading="writeDataTypeLoading"
+                  :options="writeDataTypeOptions"
+                  :placeholder="isConfiguredWriteMode ? '由写入属性自动带出' : '请选择数据类型'"
+                />
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="字节序">
+                <a-select
+                  v-model:value="writeForm.byteOrder"
+                  :disabled="isConfiguredWriteMode"
+                  :loading="writeByteOrderLoading"
+                  :options="writeByteOrderOptions"
+                  :placeholder="isConfiguredWriteMode ? '由写入属性自动带出' : '请选择字节序'"
+                />
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item
+                label="缩放系数"
+                :extra="isConfiguredWriteMode ? undefined : '可选，默认 1'"
+              >
+                <a-input-number
+                  v-model:value="writeForm.scaleFactor"
+                  :disabled="isConfiguredWriteMode"
+                  :min="0"
+                  class="write-full-width"
+                  placeholder="默认 1"
+                />
+              </a-form-item>
+            </a-col>
+            <a-col v-if="writeEngRangeText" :span="12">
+              <a-form-item label="工程值范围">
+                <a-input :value="writeEngRangeText" disabled />
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </section>
+
+        <section class="edit-section">
+          <h4 class="edit-section__title">写入值</h4>
+          <a-form-item label="写入值" required>
+            <a-input
+              v-model:value="writeForm.value"
+              placeholder="请输入写入值"
+              allow-clear
+            />
+          </a-form-item>
+        </section>
       </a-form>
     </a-modal>
   </div>
@@ -240,6 +287,22 @@ const writeForm = reactive({
 })
 
 const isConfiguredWriteMode = computed(() => writeForm.mode === WRITE_MODE_CONFIGURED)
+
+const writeModalTitle = computed(() => {
+  const name = writeDevice.value?.name
+  return name ? `测试写入 · ${name}` : '测试写入'
+})
+
+const writeEngRangeText = computed(() => {
+  const min = writeForm.engValueMin
+  const max = writeForm.engValueMax
+  const hasMin = min != null && min !== ''
+  const hasMax = max != null && max !== ''
+  if (!hasMin && !hasMax) return ''
+  if (hasMin && hasMax) return `${min} ~ ${max}`
+  if (hasMin) return `≥ ${min}`
+  return `≤ ${max}`
+})
 
 const statData = computed(() => {
   const list = equipmentList.value
@@ -962,11 +1025,22 @@ onBeforeUnmount(() => {
   margin-top: 48px;
 }
 
-.write-address-tip {
-  margin-top: 6px;
-  color: var(--omes-color-text-tertiary);
-  font-size: 13px;
-  line-height: 1.5;
+.write-form .write-mode-group {
+  display: flex;
+  width: 100%;
+}
+
+.write-form .write-mode-group :deep(.ant-radio-button-wrapper) {
+  flex: 1;
+  text-align: center;
+}
+
+.write-empty-alert {
+  margin-bottom: 14px;
+}
+
+.write-full-width {
+  width: 100%;
 }
 
 @media (prefers-reduced-motion: no-preference) {

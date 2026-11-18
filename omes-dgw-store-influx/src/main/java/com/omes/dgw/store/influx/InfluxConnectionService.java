@@ -7,16 +7,15 @@ import com.influxdb.client.domain.HealthCheck;
 import com.omes.dgw.config.AppProperties;
 import com.omes.dgw.timeseries.InfluxRuntime;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /**
  * InfluxDB 连接封装：健康检查与读写 API 入口；实现 {@link InfluxRuntime} SPI。
  * 由 {@link InfluxStoreAutoConfiguration} {@code @Import} 注册（勿加 {@code @Service}，避免与组件扫描重复）。
+ * 依赖 {@link InfluxDBClient} 由构造注入保证，勿用 {@code @ConditionalOnBean}（组件扫描阶段不可靠）。
  */
 @Slf4j
 @ConditionalOnProperty(prefix = "app.collect", name = "monitor-type", havingValue = "influxdb")
-@ConditionalOnBean(InfluxDBClient.class)
 public class InfluxConnectionService implements InfluxRuntime {
 
     private final InfluxDBClient client;

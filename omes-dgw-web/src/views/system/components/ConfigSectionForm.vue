@@ -13,43 +13,48 @@
             v-for="field in block.fields"
             :key="field.key"
             class="field-cell"
-            :class="fieldCellClass(field)"
+            :class="[
+              fieldCellClass(field),
+              { 'field-cell--full': !!$slots[`field-${field.key}`] }
+            ]"
           >
-            <slot name="field" :field="field" :values="form">
-            <a-form-item :label="field.label" :extra="field.hint || undefined">
-              <a-switch
-                v-if="field.type === 'boolean'"
-                :checked="form[field.key] === 'true' || form[field.key] === true"
-                checked-children="开"
-                un-checked-children="关"
-                @update:checked="v => (form[field.key] = String(v))"
-              />
-              <a-select
-                v-else-if="field.type === 'select'"
-                v-model:value="form[field.key]"
-                :options="(field.options || []).map(o => ({ label: field.key === 'COLLECT_MONITOR_TYPE' ? (o === 'influxdb' ? 'Influxdb' : '无') : o, value: o }))"
-                style="width: 100%"
-              />
-              <a-input-password
-                v-else-if="field.type === 'password'"
-                v-model:value="form[field.key]"
-                :placeholder="passwordPlaceholder(field)"
-                allow-clear
-              />
-              <a-input-number
-                v-else-if="field.type === 'int' || field.type === 'double'"
-                v-model:value="numberModel[field.key]"
-                style="width: 100%"
-                :step="field.type === 'double' ? 0.1 : 1"
-                @change="v => onNumberChange(field, v)"
-              />
-              <a-input
-                v-else
-                v-model:value="form[field.key]"
-                :placeholder="field.defaultValue || ''"
-                allow-clear
-              />
-            </a-form-item>
+            <slot :name="`field-${field.key}`" :field="field" :values="form">
+              <slot name="field" :field="field" :values="form">
+                <a-form-item :label="field.label" :extra="field.hint || undefined">
+                  <a-switch
+                    v-if="field.type === 'boolean'"
+                    :checked="form[field.key] === 'true' || form[field.key] === true"
+                    checked-children="开"
+                    un-checked-children="关"
+                    @update:checked="v => (form[field.key] = String(v))"
+                  />
+                  <a-select
+                    v-else-if="field.type === 'select'"
+                    v-model:value="form[field.key]"
+                    :options="(field.options || []).map(o => ({ label: field.key === 'COLLECT_MONITOR_TYPE' ? (o === 'influxdb' ? 'Influxdb' : '无') : o, value: o }))"
+                    style="width: 100%"
+                  />
+                  <a-input-password
+                    v-else-if="field.type === 'password'"
+                    v-model:value="form[field.key]"
+                    :placeholder="passwordPlaceholder(field)"
+                    allow-clear
+                  />
+                  <a-input-number
+                    v-else-if="field.type === 'int' || field.type === 'double'"
+                    v-model:value="numberModel[field.key]"
+                    style="width: 100%"
+                    :step="field.type === 'double' ? 0.1 : 1"
+                    @change="v => onNumberChange(field, v)"
+                  />
+                  <a-input
+                    v-else
+                    v-model:value="form[field.key]"
+                    :placeholder="field.defaultValue || ''"
+                    allow-clear
+                  />
+                </a-form-item>
+              </slot>
             </slot>
           </div>
         </div>
@@ -81,7 +86,12 @@ const props = defineProps({
   hideFooter: { type: Boolean, default: false },
   visibleKeys: { type: Array, default: null },
   /** 仅展示并保存这些 groupLabel；空/不传则全部 */
-  visibleGroups: { type: Array, default: null }
+  visibleGroups: { type: Array, default: null },
+  /**
+   * 按表单值控制分组显隐，例如：
+   * { watchKey: 'COLLECT_MONITOR_TYPE', equals: 'influxdb', groups: ['连接管理', '历史落库', '指标落库'] }
+   */
+  revealGroupsWhen: { type: Object, default: null }
 })
 
 const emit = defineEmits(['saved', 'loaded', 'values-change'])
@@ -94,10 +104,19 @@ const numberModel = reactive({})
 const clearSecrets = reactive({})
 
 const visibleFields = computed(() => {
-  const fields = (section.value?.fields || []).filter(field => !props.visibleKeys || props.visibleKeys.includes(field.key))
+  let fields = (section.value?.fields || []).filter(field => !props.visibleKeys || props.visibleKeys.includes(field.key))
   const groups = props.visibleGroups
-  if (!groups || !groups.length) return fields
-  return fields.filter(f => groups.includes(f.groupLabel))
+  if (groups?.length) {
+    fields = fields.filter(f => groups.includes(f.groupLabel))
+  }
+  const gate = props.revealGroupsWhen
+  if (gate?.watchKey && Array.isArray(gate.groups) && gate.groups.length) {
+    const enabled = form[gate.watchKey] === gate.equals
+    if (!enabled) {
+      fields = fields.filter(f => !gate.groups.includes(f.groupLabel))
+    }
+  }
+  return fields
 })
 
 const fieldBlocks = computed(() => {
@@ -185,7 +204,7 @@ watch(
   }
 )
 
-const handleSave = async () => {
+const handleSave = async (opts = {}) => {
   if (!section.value) return
   saving.value = true
   try {
@@ -206,7 +225,7 @@ const handleSave = async () => {
     }
     const res = await saveRuntimeConfigSection(props.sectionId, { values })
     syncForm(res.data)
-    message.success('配置已保存')
+    if (!opts.quiet) message.success('配置已保存')
     emit('saved', res.data)
   } finally {
     saving.value = false
@@ -225,7 +244,7 @@ defineExpose({ reload, save: handleSave, getValues: () => ({ ...form }) })
 
 .section-desc {
   margin: 0 0 16px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--omes-color-text-secondary);
 }
 
 .field-block + .field-block {
@@ -235,14 +254,14 @@ defineExpose({ reload, save: handleSave, getValues: () => ({ ...form }) })
 .field-block__head {
   margin: 4px 0 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--omes-fluent-divider, rgba(0, 0, 0, 0.06));
+  border-bottom: 1px solid var(--omes-fluent-divider);
 }
 
 .field-block__head h4 {
   margin: 0;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--omes-color-text-secondary, rgba(0, 0, 0, 0.65));
+  font-weight: var(--omes-font-weight-semibold);
+  color: var(--omes-color-text-secondary);
   letter-spacing: 0.02em;
 }
 
@@ -280,11 +299,11 @@ defineExpose({ reload, save: handleSave, getValues: () => ({ ...form }) })
   flex-wrap: wrap;
   margin-top: 8px;
   padding-top: 16px;
-  border-top: 1px solid var(--omes-fluent-divider, rgba(0, 0, 0, 0.06));
+  border-top: 1px solid var(--omes-fluent-divider);
 }
 
 .form-footer__hint {
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--omes-color-text-tertiary);
   font-size: 12px;
   line-height: 1.5;
 }

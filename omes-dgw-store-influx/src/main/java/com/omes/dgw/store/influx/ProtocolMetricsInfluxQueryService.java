@@ -8,7 +8,6 @@ import com.omes.dgw.metrics.ProtocolMetricsHistoryQuery;
 import com.omes.dgw.metrics.ProtocolMetricsHistoryStore;
 import com.omes.dgw.metrics.ProtocolMetricsHistoryWriter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.util.StringUtils;
 
@@ -22,7 +21,6 @@ import java.util.List;
  */
 @Slf4j
 @ConditionalOnProperty(prefix = "app.collect.metrics", name = "persist-to-influx", havingValue = "true")
-@ConditionalOnBean(name = "influxDBClient")
 public class ProtocolMetricsInfluxQueryService implements ProtocolMetricsHistoryQuery {
 
     private final QueryApi queryApi;

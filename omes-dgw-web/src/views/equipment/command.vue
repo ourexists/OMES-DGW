@@ -416,24 +416,6 @@ onMounted(() => {
   padding: 12px 0 4px;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.page-header h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #0078d4;
-  border-left: 4px solid #0078d4;
-  padding-left: 12px;
-  height: 24px;
-  line-height: 24px;
-}
-
 .mono-text {
   font-family: Consolas, 'Courier New', monospace;
 }
@@ -449,7 +431,7 @@ onMounted(() => {
 
 .failed-hint {
   margin-left: 6px;
-  color: #cf1322;
+  color: var(--omes-color-error);
   font-size: 12px;
 }
 

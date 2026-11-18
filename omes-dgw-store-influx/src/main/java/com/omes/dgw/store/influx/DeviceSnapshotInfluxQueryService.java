@@ -6,7 +6,6 @@ import com.influxdb.query.FluxTable;
 import com.omes.dgw.timeseries.DeviceRealtimeHistoryWriter;
 import com.omes.dgw.timeseries.DeviceSnapshotHistoryQuery;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.util.StringUtils;
 
@@ -22,7 +21,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @ConditionalOnProperty(prefix = "app.collect.history", name = "enabled", havingValue = "true")
-@ConditionalOnBean(name = "influxDBClient")
 public class DeviceSnapshotInfluxQueryService implements DeviceSnapshotHistoryQuery {
 
     private final QueryApi queryApi;

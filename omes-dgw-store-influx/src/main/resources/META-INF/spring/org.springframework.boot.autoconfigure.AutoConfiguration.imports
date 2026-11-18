@@ -1,1 +1,1 @@
-# Spring Boot AutoConfiguration
+com.omes.dgw.store.influx.InfluxStoreAutoConfiguration

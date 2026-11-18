@@ -66,6 +66,18 @@ body,
   line-height: 24px;
 }
 
+.page-header__title {
+  min-width: 0;
+}
+
+.page-header__desc {
+  margin: 6px 0 0;
+  max-width: 680px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--omes-color-text-secondary);
+}
+
 .stats-flow {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

@@ -194,36 +194,30 @@ public class SlmpTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
         return raw;
     }
 
+    /**
+     * 已配置点位时读第一个点验证。无点位时只确认 TCP 已通，不另读 D0。
+     */
     private void verifyReadableAfterConnect(SlmpTcpClient client, ProtocolConnect connect) throws Exception {
-        if (StringUtils.hasText(connect.getId())) {
-            DeviceRealtimeObj cached = getDeviceCache(connect.getId());
-            if (cached != null) {
-                Map<String, DevicePoint> points = DevicePointConfigSupport.toPointsByName(cached);
-                if (!points.isEmpty()) {
-                    DevicePoint first = points.values().iterator().next();
-                    DeviceCollectConfig config = DevicePointConfigSupport.normalize(cached.getCollectConfig());
-                    try {
-                        readTag(client, resolveTagAddress(first), first, config.getModbusByteOrder());
-                    } catch (SlmpEndCodeException e) {
-                        if (e.isCommandOrDataError()) {
-                            throw e;
-                        }
-                        log.info("SLMP 协议已通，点位 {} 返回 {}", first.getAddress(), e.getMessage());
-                    }
-                    return;
-                }
-            }
+        if (!StringUtils.hasText(connect.getId())) {
+            return;
         }
+        DeviceRealtimeObj cached = getDeviceCache(connect.getId());
+        if (cached == null) {
+            return;
+        }
+        Map<String, DevicePoint> points = DevicePointConfigSupport.toPointsByName(cached);
+        if (points.isEmpty()) {
+            return;
+        }
+        DevicePoint first = points.values().iterator().next();
+        DeviceCollectConfig config = DevicePointConfigSupport.normalize(cached.getCollectConfig());
         try {
-            client.readWords(0xA8, 0, 1);
+            readTag(client, resolveTagAddress(first), first, config.getModbusByteOrder());
         } catch (SlmpEndCodeException e) {
             if (e.isCommandOrDataError()) {
                 throw e;
             }
-            log.info("SLMP 协议已通，探测 D0 返回 {}", e.getMessage());
-        } catch (IOException e) {
-            throw new IOException("读验证失败(D0): " + e.getMessage()
-                    + "；请检查端口是否为 SLMP/MC、帧 3E/4E Binary、站号是否为本站(255)", e);
+            log.info("SLMP 协议已通，点位 {} 返回 {}", first.getAddress(), e.getMessage());
         }
     }
 

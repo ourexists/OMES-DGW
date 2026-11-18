@@ -329,8 +329,6 @@ onBeforeUnmount(() => {
 
 .title-copy h2 {
   height: auto;
-  padding-left: 0;
-  border-left: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -426,7 +424,7 @@ onBeforeUnmount(() => {
 .card-title em {
   min-width: 22px;
   padding: 0 6px;
-  border-radius: 10px;
+  border-radius: var(--omes-border-radius-x-large);
   background: var(--omes-color-primary-bg);
   color: var(--omes-color-primary);
   font-style: normal;

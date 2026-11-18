@@ -1,6 +1,5 @@
 package com.omes.dgw.store.influx;
 
-import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import com.omes.dgw.device.cache.DevicePointRealtimeObj;
@@ -9,7 +8,6 @@ import com.omes.dgw.device.cache.PointValueScaler;
 import com.omes.dgw.device.enums.DeviceProtocol;
 import com.omes.dgw.timeseries.DeviceRealtimeHistoryWriter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.util.StringUtils;
 
@@ -22,7 +20,6 @@ import java.util.Map;
 
 @Slf4j
 @ConditionalOnProperty(prefix = "app.collect", name = "monitor-type", havingValue = "influxdb")
-@ConditionalOnBean(InfluxDBClient.class)
 public class DeviceRealtimeInfluxBatchWriter implements DeviceRealtimeHistoryWriter {
 
     private final InfluxConnectionService influx;

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.omes.dgw.device.controller.core.DeviceOfflineWatcher;
 import com.omes.dgw.device.online.DeviceOnlineEventCollector;
 import com.omes.dgw.metrics.CollectDeviceOfflineMetrics;
+import com.omes.dgw.northbound.mqtt.DeviceRealtimeMqttPublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Lazy;
@@ -32,6 +33,7 @@ public class DeviceRealtimeCache {
     private final DeviceRealtimeCacheStore store;
     private final ObjectMapper objectMapper;
     private final ObjectProvider<DeviceRealtimeHistoryConsumer> historyConsumer;
+    private final ObjectProvider<DeviceRealtimeMqttPublisher> mqttPublisher;
     private final ObjectProvider<DeviceOnlineEventCollector> onlineEventCollector;
     private final ObjectProvider<DeviceOfflineWatcher> offlineWatchService;
     private final DeviceRealtimeCacheMetrics cacheMetrics;
@@ -43,6 +45,7 @@ public class DeviceRealtimeCache {
             DeviceRealtimeCacheMetrics cacheMetrics,
             CollectDeviceOfflineMetrics deviceOfflineMetrics,
             ObjectProvider<DeviceRealtimeHistoryConsumer> historyConsumer,
+            ObjectProvider<DeviceRealtimeMqttPublisher> mqttPublisher,
             ObjectProvider<DeviceOnlineEventCollector> onlineEventCollector,
             @Lazy ObjectProvider<DeviceOfflineWatcher> offlineWatchService
     ) {
@@ -51,6 +54,7 @@ public class DeviceRealtimeCache {
         this.cacheMetrics = cacheMetrics;
         this.deviceOfflineMetrics = deviceOfflineMetrics;
         this.historyConsumer = historyConsumer;
+        this.mqttPublisher = mqttPublisher;
         this.onlineEventCollector = onlineEventCollector;
         this.offlineWatchService = offlineWatchService;
         log.info("设备实时缓存门面已初始化 store={}", store.getClass().getSimpleName());
@@ -101,6 +105,7 @@ public class DeviceRealtimeCache {
                 return false;
             }
             historyConsumer.ifAvailable(consumer -> consumer.onSnapshotSaved(snapshot, json));
+            mqttPublisher.ifAvailable(publisher -> publisher.onSnapshotSaved(snapshot));
             if (scheduleOfflineWatch) {
                 offlineWatchService.ifAvailable(watcher -> watcher.watch(snapshot));
             }
@@ -144,6 +149,7 @@ public class DeviceRealtimeCache {
             String json = objectMapper.writeValueAsString(snapshot);
             store.save(snapshot, json);
             historyConsumer.ifAvailable(consumer -> consumer.onSnapshotSaved(snapshot, json));
+            mqttPublisher.ifAvailable(publisher -> publisher.onSnapshotSaved(snapshot));
             if (scheduleOfflineWatch) {
                 offlineWatchService.ifAvailable(watcher -> watcher.watch(snapshot));
             }

@@ -38,3 +38,19 @@ export function saveRuntimeConfigSection(id, data) {
     data
   })
 }
+
+export function listLogFiles() {
+  return request({
+    url: '/system/logs',
+    method: 'get'
+  })
+}
+
+export function readLogContent(params) {
+  return request({
+    url: '/system/logs/content',
+    method: 'get',
+    params,
+    timeout: 30000
+  })
+}
