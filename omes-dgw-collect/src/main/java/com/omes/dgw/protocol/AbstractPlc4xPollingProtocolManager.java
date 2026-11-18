@@ -35,6 +35,7 @@ import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.api.messages.PlcWriteRequest;
 import org.apache.plc4x.java.api.messages.PlcWriteResponse;
+import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.apache.plc4x.java.utils.cache.CachedPlcConnectionManager;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.StringUtils;
@@ -58,6 +59,8 @@ public abstract class AbstractPlc4xPollingProtocolManager implements ProtocolMan
 
     private static final long WRITE_READ_DELAY_MS = 500L;
     private static final int DEFAULT_READ_CHUNK_SIZE = 100;
+    /** 无配置点位时，在已有 Modbus 连接上读保持寄存器 0，用来确认协议有应答。 */
+    private static final String MODBUS_LINK_READ = "holding-register:1:UINT";
     private static final int MAX_CONNECTION_READ_RETRIES = 2;
     private static final long CONNECTION_RETRY_DELAY_MS = 300L;
 
@@ -167,13 +170,68 @@ public abstract class AbstractPlc4xPollingProtocolManager implements ProtocolMan
             if (!connection.getMetadata().isReadSupported()) {
                 return DeviceConnectionTestVo.fail("连接已建立，但不支持读取");
             }
+            if (!isModbusProtocol()) {
+                long latencyMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+                return DeviceConnectionTestVo.ok("连接成功", latencyMs);
+            }
+            String pointAddress = firstConfiguredReadAddress(connect);
+            PlcResponseCode code = readProtocolAnswer(
+                    connection, spec, pointAddress != null ? pointAddress : MODBUS_LINK_READ);
+            if (!PlcTagResponseSupport.isProtocolAnswer(code)) {
+                String detail = code == null ? "无应答" : code.name();
+                return DeviceConnectionTestVo.fail("协议读失败: " + detail);
+            }
             long latencyMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
-            return DeviceConnectionTestVo.ok("连接成功", latencyMs);
+            String message = code == PlcResponseCode.OK
+                    ? "连接成功"
+                    : (pointAddress != null ? "协议已通，点位地址未读到" : "协议已通");
+            return DeviceConnectionTestVo.ok(message, latencyMs);
         } catch (Exception e) {
             log.debug("{} test connection failed: {}", protocol(), e.getMessage());
             String message = e.getMessage() != null ? e.getMessage() : "连接失败";
             return DeviceConnectionTestVo.fail(message);
         }
+    }
+
+    private String firstConfiguredReadAddress(ProtocolConnect connect) {
+        if (connect == null || !StringUtils.hasText(connect.getId())) {
+            return null;
+        }
+        DeviceRealtimeObj cached = requireCachedDevice(connect.getId());
+        if (cached == null) {
+            return null;
+        }
+        Map<String, DevicePoint> points = DevicePointConfigSupport.toPointsByName(cached);
+        if (points.isEmpty()) {
+            return null;
+        }
+        String address = resolveTagAddress(points.values().iterator().next());
+        return StringUtils.hasText(address) ? address : null;
+    }
+
+    private PlcResponseCode readProtocolAnswer(PlcConnection connection, ConnectSpec spec, String address) throws Exception {
+        long timeoutMs = spec.requestTimeoutMs > 0 ? spec.requestTimeoutMs : 3_000L;
+        PlcReadResponse response = connection.readRequestBuilder()
+                .addTagAddress("link", address)
+                .build()
+                .execute()
+                .get(timeoutMs, TimeUnit.MILLISECONDS);
+        return PlcTagResponseSupport.safeResponseCode(response, "link");
+    }
+
+    private boolean isModbusProtocol() {
+        String protocol = protocol();
+        return protocol != null && protocol.toUpperCase().contains("MODBUS");
+    }
+
+    /** 无点位轮询：在当前连接上读一个寄存器。协议有应答则返回，否则抛出让本轮失败。 */
+    private void readLinkProbe(PlcConnection connection, ConnectSpec spec) throws Exception {
+        PlcResponseCode code = readProtocolAnswer(connection, spec, MODBUS_LINK_READ);
+        if (PlcTagResponseSupport.isProtocolAnswer(code)) {
+            return;
+        }
+        String detail = code == null ? "无应答" : code.name();
+        throw new PlcConnectionFaultException("协议读无有效应答: " + detail);
     }
 
     @PostConstruct
@@ -272,7 +330,7 @@ public abstract class AbstractPlc4xPollingProtocolManager implements ProtocolMan
             connectionFailureHandler.reset(connectId);
         }
         if (spec.tagAddresses.isEmpty()) {
-            log.info("{} polling started (connectivity-only, no points), connectId={}, intervalSec={}, firstDelayMs={}, connectionUrl={}",
+            log.info("{} polling started (no points, link read each interval), connectId={}, intervalSec={}, firstDelayMs={}, connectionUrl={}",
                     protocol(), connectId, pollIntervalSec, firstDelay.toMillis(), redactConnectionUrl(spec.connectionUrl));
         } else {
             log.info("{} polling started, connectId={}, intervalSec={}, firstDelayMs={}, pointCount={}, connectionUrl={}",
@@ -402,23 +460,28 @@ public abstract class AbstractPlc4xPollingProtocolManager implements ProtocolMan
     }
 
     /**
-     * 停用时关闭底层连接；若同 URL 仍被其它设备轮询则保留，避免误杀共享 PLC 会话。
+     * 关闭底层连接。同 URL 仍被其它设备占用时保留，避免一台失败拆掉共享会话。
+     * 当前设备还在轮询表里时不算占用。
      */
-    private void evictIfNoLongerUsed(ConnectSpec spec) {
+    protected void evictIfNoLongerUsed(ConnectSpec spec) {
         if (spec == null || !StringUtils.hasText(spec.connectionUrl)) {
             return;
         }
         for (ConnectSpec other : specMap.values()) {
-            if (other != null && spec.connectionUrl.equals(other.connectionUrl)) {
-                log.debug("{} skip connection evict: url still used by deviceId={}",
-                        protocol(), other.deviceId);
-                return;
+            if (other == null || other == spec || !spec.connectionUrl.equals(other.connectionUrl)) {
+                continue;
             }
+            if (StringUtils.hasText(spec.deviceId) && spec.deviceId.equals(other.deviceId)) {
+                continue;
+            }
+            log.debug("{} skip connection evict: url still used by deviceId={}",
+                    protocol(), other.deviceId);
+            return;
         }
         try {
             evictPollingConnection(spec);
         } catch (Exception e) {
-            log.debug("{} evict on stop failed deviceId={}: {}",
+            log.debug("{} evict failed deviceId={}: {}",
                     protocol(), spec.deviceId, e.getMessage());
         }
     }
@@ -597,7 +660,7 @@ public abstract class AbstractPlc4xPollingProtocolManager implements ProtocolMan
         }
         pollMetricsPending.put(connectId, Boolean.FALSE);
         recordPoll(spec, false, startNanos);
-        evictPollingConnection(spec);
+        evictIfNoLongerUsed(spec);
         recycleReadExecutor(connectId);
         String msg = "poll round timed out after " + timeoutMs + "ms";
         if (connectionFailureHandler.onPollFailure(connectId, protocol(), msg)) {
@@ -834,7 +897,7 @@ public abstract class AbstractPlc4xPollingProtocolManager implements ProtocolMan
     }
 
     /**
-     * 是否视为本轮采集成功：无点位时仅探活；有点位时要求解析后 online（至少一个点有值）。
+     * 是否视为本轮采集成功：无点位时本轮已在同一连接上完成协议读且未抛错；有点位时要求解析后 online。
      */
     private static boolean isPollSuccessful(ConnectSpec spec, DeviceRealtimeObj snapshot) {
         if (spec.tagAddresses == null || spec.tagAddresses.isEmpty()) {
@@ -1124,6 +1187,12 @@ public abstract class AbstractPlc4xPollingProtocolManager implements ProtocolMan
                 if (!connection.getMetadata().isReadSupported()) {
                     throw new IllegalStateException("PLC connection does not support read");
                 }
+                if (spec.tagAddresses == null || spec.tagAddresses.isEmpty()) {
+                    if (isModbusProtocol()) {
+                        readLinkProbe(connection, spec);
+                    }
+                    return Map.of();
+                }
                 return readOnce(connection, spec);
             } catch (InterruptedException e) {
                 throw e;
@@ -1135,7 +1204,7 @@ public abstract class AbstractPlc4xPollingProtocolManager implements ProtocolMan
                         TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - connStartNanos));
                 lastException = e;
                 if (shouldEvictConnectionOnReadFailure(e)) {
-                    evictCachedConnection(manager, spec.connectionUrl);
+                    evictIfNoLongerUsed(spec);
                 }
                 boolean chunkFailure = isChunkLevelReadFailure(e);
                 PlcResponseDiagnostics.logConnectionFailure(

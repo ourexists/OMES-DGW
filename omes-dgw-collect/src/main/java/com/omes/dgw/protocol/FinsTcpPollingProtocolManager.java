@@ -194,24 +194,30 @@ public class FinsTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
     }
 
     /**
-     * 握手后若已配置点位，读第一个点验证，避免「测试成功但采集读点全失败」。
-     * 无点位时只确认握手，不另读 DM0。
+     * 握手后读一个点验证：与轮询一致，避免「测试成功但采集读点全失败」。
      */
     private void verifyReadableAfterHandshake(FinsTcpClient client, ProtocolConnect connect) throws Exception {
-        if (!StringUtils.hasText(connect.getId())) {
-            return;
+        if (StringUtils.hasText(connect.getId())) {
+            DeviceRealtimeObj cached = getDeviceCache(connect.getId());
+            if (cached != null) {
+                Map<String, DevicePoint> points = DevicePointConfigSupport.toPointsByName(cached);
+                if (!points.isEmpty()) {
+                    DevicePoint first = points.values().iterator().next();
+                    DeviceCollectConfig config = DevicePointConfigSupport.normalize(cached.getCollectConfig());
+                    readTag(client, resolveTagAddress(first), first, config.getModbusByteOrder());
+                    return;
+                }
+            }
         }
-        DeviceRealtimeObj cached = getDeviceCache(connect.getId());
-        if (cached == null) {
-            return;
+        readLinkWord(client);
+    }
+
+    private static void readLinkWord(FinsTcpClient client) throws IOException {
+        try {
+            client.readWords(0x82, 0, 1);
+        } catch (IOException e) {
+            throw new IOException("读验证失败(DM0): " + e.getMessage() + "；请检查点位地址或数据区权限", e);
         }
-        Map<String, DevicePoint> points = DevicePointConfigSupport.toPointsByName(cached);
-        if (points.isEmpty()) {
-            return;
-        }
-        DevicePoint first = points.values().iterator().next();
-        DeviceCollectConfig config = DevicePointConfigSupport.normalize(cached.getCollectConfig());
-        readTag(client, resolveTagAddress(first), first, config.getModbusByteOrder());
     }
 
     @Override
@@ -294,7 +300,7 @@ public class FinsTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
                         TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - connStartNanos));
                 lastException = e;
                 if (shouldEvictConnectionOnReadFailure(e)) {
-                    evictPollingConnection(spec);
+                    evictIfNoLongerUsed(spec);
                 }
                 boolean chunkFailure = isChunkLevelReadFailure(e);
                 FinsConnectionLog.pollReadRetry(
@@ -355,7 +361,7 @@ public class FinsTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
         } catch (Exception e) {
             log.error("{} write error connectId={}: {}", protocol(), connectId, e.getMessage());
             if (spec.reusePollingConnection && shouldEvictConnectionOnReadFailure(toException(e))) {
-                evictPollingConnection(spec);
+                evictIfNoLongerUsed(spec);
             }
             result = ProtocolWriteResult.fail(e.getMessage());
         } finally {
@@ -366,6 +372,18 @@ public class FinsTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
 
     private Map<String, Object> readAllTags(FinsTcpClient client, ConnectSpec spec) throws Exception {
         Map<String, Object> result = new LinkedHashMap<>();
+        if (spec.tagAddresses == null || spec.tagAddresses.isEmpty()) {
+            try {
+                readLinkWord(client);
+            } catch (IOException e) {
+                if (PollTransportFailures.isTransportFailure(e)) {
+                    throw e;
+                }
+                // 结束码表示 PLC 已应答，链路算通，不拆连接、不熔断
+                log.debug("FINS 协议已通，DM0 返回 {}", e.getMessage());
+            }
+            return result;
+        }
         FinsReadPlan plan = readPlans.get(spec.deviceId);
         if (plan == null) {
             plan = FinsReadPlan.build(spec.tagAddresses, spec.pointsByName, maxMergeGapWords, maxWordsPerRead);

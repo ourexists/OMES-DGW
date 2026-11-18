@@ -174,7 +174,7 @@ public class S7PollingProtocolManager extends AbstractPlc4xPollingProtocolManage
                         TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - connStartNanos));
                 lastException = unwrap(e);
                 if (shouldEvictConnectionOnReadFailure(lastException)) {
-                    evictPollingConnection(spec);
+                    evictIfNoLongerUsed(spec);
                 }
                 log.warn("{} connection read {}/{} failed connectId={}: {}",
                         protocol(), attempt, maxAttempts, connectId, lastException.getMessage());
@@ -218,7 +218,7 @@ public class S7PollingProtocolManager extends AbstractPlc4xPollingProtocolManage
             log.error("{} write error connectId={}: {}", protocol(), connectId, e.getMessage());
             Exception cause = unwrap(e);
             if (shouldEvictConnectionOnReadFailure(cause)) {
-                evictPollingConnection(spec);
+                evictIfNoLongerUsed(spec);
             }
             result = ProtocolWriteResult.fail(cause.getMessage() != null ? cause.getMessage() : "协议写入失败");
         } finally {

@@ -136,6 +136,18 @@ public final class PlcTagResponseSupport {
                 || code == PlcResponseCode.REMOTE_BUSY;
     }
 
+    /** 对端已按协议应答：读成功，或坏地址一类设备异常（链路是通的）。 */
+    public static boolean isProtocolAnswer(PlcResponseCode code) {
+        return code == PlcResponseCode.OK || isAddressLevelAnswer(code);
+    }
+
+    public static boolean isAddressLevelAnswer(PlcResponseCode code) {
+        return code == PlcResponseCode.INVALID_ADDRESS
+                || code == PlcResponseCode.NOT_FOUND
+                || code == PlcResponseCode.INVALID_DATATYPE
+                || code == PlcResponseCode.INVALID_DATA;
+    }
+
     public static PlcResponseCode safeResponseCode(PlcTagResponse response, String tagName) {
         if (response == null || !StringUtils.hasText(tagName)) {
             return null;

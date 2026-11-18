@@ -194,31 +194,49 @@ public class SlmpTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
         return raw;
     }
 
-    /**
-     * 已配置点位时读第一个点验证。无点位时只确认 TCP 已通，不另读 D0。
-     */
     private void verifyReadableAfterConnect(SlmpTcpClient client, ProtocolConnect connect) throws Exception {
-        if (!StringUtils.hasText(connect.getId())) {
-            return;
+        if (StringUtils.hasText(connect.getId())) {
+            DeviceRealtimeObj cached = getDeviceCache(connect.getId());
+            if (cached != null) {
+                Map<String, DevicePoint> points = DevicePointConfigSupport.toPointsByName(cached);
+                if (!points.isEmpty()) {
+                    DevicePoint first = points.values().iterator().next();
+                    DeviceCollectConfig config = DevicePointConfigSupport.normalize(cached.getCollectConfig());
+                    try {
+                        readTag(client, resolveTagAddress(first), first, config.getModbusByteOrder());
+                    } catch (SlmpEndCodeException e) {
+                        if (e.isCommandOrDataError()) {
+                            throw e;
+                        }
+                        log.info("SLMP 协议已通，点位 {} 返回 {}", first.getAddress(), e.getMessage());
+                    }
+                    return;
+                }
+            }
         }
-        DeviceRealtimeObj cached = getDeviceCache(connect.getId());
-        if (cached == null) {
-            return;
+        String answered = readLinkWord(client);
+        if (answered != null) {
+            log.info("SLMP 协议已通，探测 D0 返回 {}", answered);
         }
-        Map<String, DevicePoint> points = DevicePointConfigSupport.toPointsByName(cached);
-        if (points.isEmpty()) {
-            return;
-        }
-        DevicePoint first = points.values().iterator().next();
-        DeviceCollectConfig config = DevicePointConfigSupport.normalize(cached.getCollectConfig());
+    }
+
+    /**
+     * 无点位时在当前连接上读 D0。命令/帧不匹配抛 {@link SlmpEndCodeException}；
+     * 其他结束码表示协议已应答，返回结束码说明。
+     */
+    private static String readLinkWord(SlmpTcpClient client) throws IOException {
         try {
-            readTag(client, resolveTagAddress(first), first, config.getModbusByteOrder());
+            client.readWords(0xA8, 0, 1);
         } catch (SlmpEndCodeException e) {
             if (e.isCommandOrDataError()) {
                 throw e;
             }
-            log.info("SLMP 协议已通，点位 {} 返回 {}", first.getAddress(), e.getMessage());
+            return e.getMessage();
+        } catch (IOException e) {
+            throw new IOException("读验证失败(D0): " + e.getMessage()
+                    + "；请检查端口是否为 SLMP/MC、帧 3E/4E Binary、站号是否为本站(255)", e);
         }
+        return null;
     }
 
     @Override
@@ -231,7 +249,7 @@ public class SlmpTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
 
     @Override
     protected boolean shouldEvictConnectionOnReadFailure(Exception e) {
-        if (isSlmpEndCodeFailure(e)) {
+        if (isLinkFrameMismatch(e) || isSlmpEndCodeFailure(e)) {
             return false;
         }
         if (e instanceof IOException) {
@@ -239,7 +257,7 @@ public class SlmpTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
         }
         Throwable cause = e.getCause();
         while (cause != null) {
-            if (isSlmpEndCodeFailure(cause)) {
+            if (isLinkFrameMismatch(cause) || isSlmpEndCodeFailure(cause)) {
                 return false;
             }
             if (cause instanceof IOException) {
@@ -248,6 +266,12 @@ public class SlmpTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
             cause = cause.getCause();
         }
         return !(e instanceof IllegalArgumentException);
+    }
+
+    /** D0 命令/帧不匹配：协议已应答，保留当前 TCP。传输失败的文案带冒号后的原因，不走这里。 */
+    private static boolean isLinkFrameMismatch(Throwable error) {
+        String msg = error == null ? null : error.getMessage();
+        return "读验证失败(D0)".equals(msg);
     }
 
     private static boolean isSlmpEndCodeFailure(Throwable error) {
@@ -274,6 +298,8 @@ public class SlmpTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
                         spec.connectionUrl, client -> {
                             try {
                                 return readAllTags(client, spec);
+                            } catch (RuntimeException e) {
+                                throw e;
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
@@ -291,7 +317,7 @@ public class SlmpTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
                         TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - connStartNanos));
                 lastException = e;
                 if (shouldEvictConnectionOnReadFailure(e)) {
-                    evictPollingConnection(spec);
+                    evictIfNoLongerUsed(spec);
                 }
                 SlmpConnectionLog.pollReadRetry(
                         spec.deviceId,
@@ -349,7 +375,7 @@ public class SlmpTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
         } catch (Exception e) {
             log.error("{} write error connectId={}: {}", protocol(), connectId, e.getMessage());
             if (spec.reusePollingConnection && shouldEvictConnectionOnReadFailure(toException(e))) {
-                evictPollingConnection(spec);
+                evictIfNoLongerUsed(spec);
             }
             result = ProtocolWriteResult.fail(e.getMessage());
         } finally {
@@ -360,6 +386,14 @@ public class SlmpTcpPollingProtocolManager extends AbstractPlc4xPollingProtocolM
 
     private Map<String, Object> readAllTags(SlmpTcpClient client, ConnectSpec spec) throws Exception {
         Map<String, Object> result = new LinkedHashMap<>();
+        if (spec.tagAddresses == null || spec.tagAddresses.isEmpty()) {
+            try {
+                readLinkWord(client);
+            } catch (SlmpEndCodeException e) {
+                throw new IllegalStateException("读验证失败(D0)");
+            }
+            return result;
+        }
         SlmpReadPlan plan = readPlans.get(spec.deviceId);
         if (plan == null) {
             plan = SlmpReadPlan.build(
